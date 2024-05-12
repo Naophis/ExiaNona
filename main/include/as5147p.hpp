@@ -14,8 +14,8 @@ class AS5147P {
 public:
   AS5147P();
   virtual ~AS5147P();
-
-  void init();
+  void init(spi_host_device_t spi_dev, std::shared_ptr<spi_bus_config_t> &bus,
+            std::shared_ptr<spi_device_interface_config_t> &devcfg);
   uint8_t write1byte(const uint8_t address, const uint8_t data);
   uint8_t read1byte(const uint8_t address);
   int16_t read2byte(const uint16_t address);
@@ -36,8 +36,7 @@ public:
   int read_accel_y();
 
 private:
-  spi_device_handle_t spi_l;
-  spi_device_handle_t spi_r;
+  spi_device_handle_t spi;
   spi_transaction_t itr_t;
   spi_transaction_t *r_trans;
   bool _spiCalcEvenParity(uint16_t value);

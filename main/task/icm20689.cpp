@@ -5,9 +5,9 @@ ICM20689::~ICM20689() {}
 void ICM20689::init() {
   esp_err_t ret;
   spi_bus_config_t buscfg = {
-      .mosi_io_num = EN_MOSI,
-      .miso_io_num = EN_MISO,
-      .sclk_io_num = EN_CLK,
+      .mosi_io_num = SPI_R_MOSI,
+      .miso_io_num = SPI_R_MISO,
+      .sclk_io_num = SPI_R_CLK,
       .quadwp_io_num = -1,  // unused
       .quadhd_io_num = -1,  // unused
       .max_transfer_sz = 2, // bytes
@@ -17,7 +17,7 @@ void ICM20689::init() {
   spi_device_interface_config_t devcfg = {
       .mode = 3,
       .clock_speed_hz = 7 * 1000 * 1000, // aaaaaaaaaaa
-      .spics_io_num = EN_GN_SSL,
+      .spics_io_num = SPI_R_GYRO_SSL,
       .queue_size = 7,
   };
   // Initialize the SPI bus

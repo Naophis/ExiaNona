@@ -3,29 +3,14 @@
 
 LSM6DSR::LSM6DSR() {}
 LSM6DSR::~LSM6DSR() {}
-void LSM6DSR::init() {
+void LSM6DSR::init(spi_host_device_t spi_dev,
+                   std::shared_ptr<spi_bus_config_t> &bus,
+                   std::shared_ptr<spi_device_interface_config_t> &devcfg) {
   esp_err_t ret;
-  spi_bus_config_t buscfg = {
-      .mosi_io_num = EN_MOSI,
-      .miso_io_num = EN_MISO,
-      .sclk_io_num = EN_CLK,
-      .quadwp_io_num = -1,  // unused
-      .quadhd_io_num = -1,  // unused
-      .max_transfer_sz = 2, // bytes
-      .flags = SPICOMMON_BUSFLAG_MASTER,
-      .intr_flags = 0 // 割り込みをしない
-  };
-  spi_device_interface_config_t devcfg = {
-      .mode = 3,
-      .clock_speed_hz = 10 * 1000 * 1000, // aaaaaaaaaaa
-      .spics_io_num = EN_GN_SSL,
-      .queue_size = 12,
-  };
   // Initialize the SPI bus
-  ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_DISABLED);
+  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
   ESP_ERROR_CHECK(ret);
-  // Attach the LCD to the SPI bus
-  ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
+  ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
   ESP_ERROR_CHECK(ret);
 }
 // uint8_t LSM6DSR::write1byte(const uint8_t address, const uint8_t data) {
@@ -203,9 +188,9 @@ void LSM6DSR::setup() {
     ;
 
   write1byte(LSM6DSRX_CTRL9_XL, 0xE2); // I3CモードをDisableに設定
-  vTaskDelay(10.0/ portTICK_PERIOD_MS);
+  vTaskDelay(10.0 / portTICK_PERIOD_MS);
   write1byte(LSM6DSRX_CTRL4_C, 0x06); // I2CモードをDisableに設定
-  vTaskDelay(10.0/ portTICK_PERIOD_MS);
+  vTaskDelay(10.0 / portTICK_PERIOD_MS);
 
   // 加速度計の設定
   write1byte(LSM6DSRX_CTRL1_XL, 0xAA); // 4g
@@ -213,9 +198,9 @@ void LSM6DSR::setup() {
   // write1byte(LSM6DSRX_CTRL1_XL, 0xA6); // 16g
   // 加速度計のスケールを±8gに設定
   // 加速度計の出力データレートを416Hzに設定
-  vTaskDelay(10.0/ portTICK_PERIOD_MS);
+  vTaskDelay(10.0 / portTICK_PERIOD_MS);
   write1byte(LSM6DSRX_CTRL8_XL, 0xB0); // 加速度計のLPFを100Hzに設定
-  vTaskDelay(10.0/ portTICK_PERIOD_MS);
+  vTaskDelay(10.0 / portTICK_PERIOD_MS);
 
   // ジャイロの設定
   write1byte(LSM6DSRX_CTRL2_G, 0xA1);
@@ -228,7 +213,7 @@ void LSM6DSR::setup() {
   // ジャイロのスケールを±4000deg/sに設定
   // ジャイロの出力データレートを6.66Hzに設定
 
-  vTaskDelay(10.0/ portTICK_PERIOD_MS);
+  vTaskDelay(10.0 / portTICK_PERIOD_MS);
 }
 int LSM6DSR::read_gyro_z() { return read2byte(0x26); }
 int LSM6DSR::read_accel_x() { return read2byte(0x3B); }

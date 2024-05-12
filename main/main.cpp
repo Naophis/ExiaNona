@@ -49,11 +49,13 @@
 
 #include <eigen3/Eigen/Eigen>
 
+#include "fmt/format.h"
+
 // #include <Eigen/Core>
 
 void init_uart() {
   uart_config_t uart_config;
-  uart_config.baud_rate = 2 * 1000 * 1000;
+  uart_config.baud_rate = 3 * 1000 * 1000;
   uart_config.data_bits = UART_DATA_8_BITS;
   uart_config.parity = UART_PARITY_DISABLE;
   uart_config.stop_bits = UART_STOP_BITS_1;
@@ -81,14 +83,24 @@ void init_gpio() {
   // io_conf.pin_bit_mask |= 1ULL << LED_L90;
   io_conf.pin_bit_mask |= 1ULL << LED_A0;
   io_conf.pin_bit_mask |= 1ULL << LED_A1;
+  io_conf.pin_bit_mask |= 1ULL << LED_A2;
   io_conf.pin_bit_mask |= 1ULL << LED_EN;
 
   io_conf.pin_bit_mask |= 1ULL << L_CW_CCW1;
   io_conf.pin_bit_mask |= 1ULL << R_CW_CCW1;
+  
+  io_conf.pin_bit_mask |= 1ULL << L_CW_CCW2;
+  io_conf.pin_bit_mask |= 1ULL << R_CW_CCW2;
+
   io_conf.pin_bit_mask |= 1ULL << SUCTION_PWM;
 
   io_conf.pin_bit_mask |= 1ULL << Motor_L_PWM;
   io_conf.pin_bit_mask |= 1ULL << Motor_R_PWM;
+
+  io_conf.pin_bit_mask |= 1ULL << SPI_R_GYRO_SSL;
+  io_conf.pin_bit_mask |= 1ULL << SPI_R_ENC_SSL;
+  io_conf.pin_bit_mask |= 1ULL << SPI_L_ENC_SSL;
+  io_conf.pin_bit_mask |= 1ULL << SPI_L_ADC_SSL;
 
   // io_conf.pin_bit_mask |= 1ULL << LED1;
   // io_conf.pin_bit_mask |= 1ULL << LED2;
@@ -196,10 +208,6 @@ extern "C" void app_main() {
   esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
   esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
 
-  // init_i2c_master();
-  uint8_t writeBuffer[2];
-  writeBuffer[0] = 0x00;
-  writeBuffer[1] = 0x00;
   while (1) {
     vTaskDelay(5000.0 / portTICK_RATE_MS);
     if (mt->ui->button_state()) {

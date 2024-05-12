@@ -2,6 +2,7 @@
 #define SENSING_TASK_HPP
 
 #include "as5147p.hpp"
+#include "ads7038.hpp"
 #include "defines.hpp"
 #include "driver/pcnt.h"
 #include "driver/timer.h"
@@ -47,7 +48,10 @@ public:
 
   // ICM20689 gyro_if;
   LSM6DSR gyro_if;
-  AS5147P enc_if;
+  AS5147P enc_r_if;
+  AS5147P enc_l_if;
+  ADS7038 adc_if;
+
   bool is_ready() { return ready; }
   std::deque<int> gyro_q;
   void set_tgt_val(std::shared_ptr<motion_tgt_val_t> &_tgt_val);
@@ -61,6 +65,14 @@ private:
   esp_timer_handle_t timer_10us;
 
   motion_tgt_val_t *receive_req;
+  std::shared_ptr<spi_bus_config_t> spi_r_bus;
+  std::shared_ptr<spi_bus_config_t> spi_l_bus;
+
+  std::shared_ptr<spi_device_interface_config_t> gyro_spi_devcfg;
+  std::shared_ptr<spi_device_interface_config_t> as5145p_left_spi_devcfg;
+  std::shared_ptr<spi_device_interface_config_t> as5145p_right_spi_devcfg;
+  std::shared_ptr<spi_device_interface_config_t> ads7038_spi_devcfg;
+ 
 
   static void timer_10us_callback(void *arg);
   static void timer_200us_callback(void *arg);

@@ -3,8 +3,8 @@
 
 cmake_minimum_required(VERSION 3.1)
 # set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g -std=c++17")
-# set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -std=c++20")
-set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -std=c++20")
+# set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g -std=c++17")
 set(COMPONENT_ADD_INCLUDEDIRS
     "."
     "include"
@@ -20,6 +20,7 @@ set(COMPONENT_SRCS
     "task/fs.cpp"
     "task/main_task.cpp"
     "task/icm20689.cpp"
+    "task/ads7038.cpp"
     "task/lsm6dsr.cpp"
     "task/sensing.cpp"
     "task/sensing_task.cpp"

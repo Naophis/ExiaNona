@@ -14,7 +14,8 @@ public:
   LSM6DSR();
   virtual ~LSM6DSR();
 
-  void init();
+  void init(spi_host_device_t spi_dev, std::shared_ptr<spi_bus_config_t> &bus,
+            std::shared_ptr<spi_device_interface_config_t> &devcfg);
   uint8_t write1byte(const uint8_t address, const uint8_t data);
   uint8_t read1byte(const uint8_t address);
   int16_t read2byte(const uint8_t address);
@@ -37,6 +38,7 @@ private:
   spi_device_handle_t spi;
   spi_transaction_t itr_t;
   spi_transaction_t *r_trans;
+  std::shared_ptr<spi_bus_config_t> bus;
 };
 
 #endif

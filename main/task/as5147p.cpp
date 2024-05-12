@@ -2,56 +2,47 @@
 
 AS5147P::AS5147P() {}
 AS5147P::~AS5147P() {}
-void AS5147P::init() {
+void AS5147P::init(spi_host_device_t spi_dev,
+                   std::shared_ptr<spi_bus_config_t> &bus,
+                   std::shared_ptr<spi_device_interface_config_t> &devcfg) {
   esp_err_t ret;
-  spi_bus_config_t buscfg = {
-      .mosi_io_num = ENC_MOSI,
-      .miso_io_num = ENC_MISO,
-      .sclk_io_num = ENC_CLK,
-      .quadwp_io_num = -1,  // unused
-      .quadhd_io_num = -1,  // unused
-      .max_transfer_sz = 3, // bytes
-      .flags = SPICOMMON_BUSFLAG_MASTER,
-      .intr_flags = 0 // 割り込みをしない
-  };
-  spi_device_interface_config_t devcfg = {
-      .mode = 3,
-      .clock_speed_hz = 10 * 1000 * 1000,
-      // .clock_speed_hz = 1 * 1000 * 1000,
-      .spics_io_num = ENC_L_CS,
-      .queue_size = 1,
-  };
-  // Initialize the SPI bus
-  ret = spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_DISABLED);
+  // ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
+  // ESP_ERROR_CHECK(ret);
+  ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
   ESP_ERROR_CHECK(ret);
-  // Attach the LCD to the SPI bus
-  ret = spi_bus_add_device(SPI3_HOST, &devcfg, &spi_l);
-  devcfg.spics_io_num = ENC_R_CS;
-  ret = spi_bus_add_device(SPI3_HOST, &devcfg, &spi_r);
+  
+// devcfg->spics_io_num
+  // esp_err_t ret;
+  // spi_bus_config_t buscfg = {
+  //     .mosi_io_num = SPI_R_MOSI,
+  //     .miso_io_num = SPI_R_MISO,
+  //     // .mosi_io_num = SPI_R_MISO,
+  //     // .miso_io_num = SPI_R_MOSI,
+  //     .sclk_io_num = SPI_R_CLK,
+  //     .quadwp_io_num = -1,  // unused
+  //     .quadhd_io_num = -1,  // unused
+  //     .max_transfer_sz = 3, // bytes
+  //     .flags = SPICOMMON_BUSFLAG_MASTER,
+  //     .intr_flags = 0 // 割り込みをしない
+  // };
+  // spi_device_interface_config_t devcfg2 = {
+  //     .mode = 3,
+  //     .clock_speed_hz = 10 * 1000 * 1000,
+  //     // .clock_speed_hz = 1 * 1000 * 1000,
+  //     .spics_io_num = SPI_R_ENC_SSL,
+  //     .queue_size = 1,
+  // };
+  // // Initialize the SPI bus
+  // ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_DISABLED);
+  // ESP_ERROR_CHECK(ret);
+  // // Attach the LCD to the SPI bus
+  // // ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi_l);
+  // // devcfg.spics_io_num = ENC_R_CS;
+  // ret = spi_bus_add_device(SPI2_HOST, &devcfg2, &spi);
 
-  // high keep
-  GPIO.out_w1ts = BIT(6);
-  GPIO.out1_w1ts.val = BIT(33 - 32);
-
-  // spi_transaction_t t;
-
-  // // 51 64 9.5 6000 0.5
-  // // 68 128 10 3000 1.1
-  // // 85 256 10.5 1500 2.5
-  // // 102 512 11 740 5.5
-  // // 119(default) 1024 11.5 370 12
-
-  // memset(&t, 0, sizeof(t)); // Zero out the transaction
-  // t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-  // t.length = 16; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
-  // t.tx_data[0] = (0x0e | 0b10000000);
-  // t.tx_data[1] = (85);
-  // t.tx_data[2] = 0;
-  // t.tx_data[3] = 0;
-  // spi_device_polling_transmit(spi_l, &t);
-  // spi_device_polling_transmit(spi_r, &t);
-
-  ESP_ERROR_CHECK(ret);
+  // // high keep
+  // GPIO.out_w1ts = BIT(6);
+  // GPIO.out1_w1ts.val = BIT(33 - 32);
 }
 uint8_t AS5147P::write1byte(const uint8_t address, const uint8_t data) {
   return 0;
@@ -87,13 +78,12 @@ uint32_t AS5147P::read2byte(const uint8_t address1, const uint8_t address2,
   t.tx_data[1] = (address2);
   t.tx_data[2] = 0;
   t.tx_data[3] = 0;
-  if (!rorl) {
-    ret = spi_device_polling_transmit(spi_l, &t); // Transmit!
-  } else {
-    ret = spi_device_polling_transmit(spi_r, &t); // Transmit!
-  }
+  ret = spi_device_polling_transmit(spi, &t); // Transmit!
   assert(ret == ESP_OK);
 
+  // printf("t.rx_data[0]: %d, t.rx_data[1]: %d, t.rx_data[2]: %d, t.rx_data[3]: "
+  //        "%d\n",
+  //        t.rx_data[0], t.rx_data[1], t.rx_data[2], t.rx_data[3]);
   return (int32_t)((uint16_t)(t.rx_data[0]) << 8) | (uint16_t)(t.rx_data[1]);
 
   // uint16_t before = (uint16_t)((t.rx_data[0] << 8) | (t.rx_data[1]));

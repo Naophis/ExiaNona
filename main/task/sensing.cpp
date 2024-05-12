@@ -23,9 +23,9 @@ void Sensing::set_tgt_val(std::shared_ptr<motion_tgt_val_t> &_tgt_val) {
 void Sensing::init() {
   // timer_init_grp0_timer0();
   if (!GY_MODE) {
-    gyro_if.init();
-    gyro_if.setup();
-    enc_if.init();
+    // gyro_if.init();
+    // gyro_if.setup();
+    // enc_if.init();
   }
   ready = true;
 

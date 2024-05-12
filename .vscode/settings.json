@@ -90,7 +90,8 @@
         "scoped_allocator": "cpp",
         "syncstream": "cpp",
         "*.ipp": "cpp",
-        "alignedvector3": "cpp"
+        "alignedvector3": "cpp",
+        "nonlinearoptimization": "cpp"
     },
     "idf.adapterTargetName": "esp32s3",
     "clang-format.executable": "/usr/bin/clang-format",
@@ -100,7 +101,7 @@
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python"
+        "editor.defaultFormatter": "ms-python.autopep8"
     },
     "python.formatting.provider": "none",
     "cmake.configureOnOpen": false,
