@@ -204,6 +204,10 @@ typedef struct {
   sen_dist_log_t sen_dist_log;
   int16_t calc_time;
   int16_t calc_time2;
+  int16_t calc_battery_time;
+  int16_t calc_led_sen_before_right90_time;
+  int16_t calc_led_sen_before_left90_time;
+  int16_t calc_led_before_righ45_time;
   int64_t sensing_timestamp;
 } sensing_result_entity_t;
 

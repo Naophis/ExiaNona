@@ -95,7 +95,7 @@ void SensingTask::task() {
     spi_r_bus->sclk_io_num = SPI_R_CLK;
     spi_r_bus->quadwp_io_num = -1;
     spi_r_bus->quadhd_io_num = -1;
-    spi_r_bus->max_transfer_sz = 3;
+    spi_r_bus->max_transfer_sz = 4;
     spi_r_bus->flags = SPICOMMON_BUSFLAG_MASTER;
     spi_r_bus->intr_flags = 0;
 
@@ -104,34 +104,42 @@ void SensingTask::task() {
     spi_l_bus->sclk_io_num = SPI_L_CLK;
     spi_l_bus->quadwp_io_num = -1;
     spi_l_bus->quadhd_io_num = -1;
-    spi_l_bus->max_transfer_sz = 3;
+    spi_l_bus->max_transfer_sz = 4;
     spi_l_bus->flags = SPICOMMON_BUSFLAG_MASTER;
     spi_l_bus->intr_flags = 0;
   }
   {
     // gyro device config
     gyro_spi_devcfg->mode = 3;
-    gyro_spi_devcfg->clock_speed_hz = 1 * 1000 * 1000;
+    gyro_spi_devcfg->clock_speed_hz = 10 * 1000 * 1000;
     gyro_spi_devcfg->spics_io_num = SPI_R_GYRO_SSL;
-    gyro_spi_devcfg->queue_size = 1;
+    gyro_spi_devcfg->queue_size = 7;
+    gyro_spi_devcfg->pre_cb = nullptr;
+    gyro_spi_devcfg->flags = SPI_DEVICE_NO_DUMMY;
   }
   { // ma11137ati device config
     ads7038_spi_devcfg->mode = 3;
-    ads7038_spi_devcfg->clock_speed_hz = 1 * 1000 * 1000;
+    ads7038_spi_devcfg->clock_speed_hz = 10 * 1000 * 1000;
     ads7038_spi_devcfg->spics_io_num = SPI_L_ADC_SSL;
-    ads7038_spi_devcfg->queue_size = 1;
+    ads7038_spi_devcfg->queue_size = 7;
+    ads7038_spi_devcfg->pre_cb = nullptr;
+    ads7038_spi_devcfg->flags = SPI_DEVICE_NO_DUMMY;
   }
   {
     as5145p_left_spi_devcfg->mode = 3;
-    as5145p_left_spi_devcfg->clock_speed_hz = 1 * 1000 * 1000;
+    as5145p_left_spi_devcfg->clock_speed_hz = 10 * 1000 * 1000;
     as5145p_left_spi_devcfg->spics_io_num = SPI_L_ENC_SSL;
-    as5145p_left_spi_devcfg->queue_size = 1;
+    as5145p_left_spi_devcfg->queue_size = 7;
+    as5145p_left_spi_devcfg->pre_cb = nullptr;
+    as5145p_left_spi_devcfg->flags = SPI_DEVICE_NO_DUMMY;
   }
   {
     as5145p_right_spi_devcfg->mode = 3;
-    as5145p_right_spi_devcfg->clock_speed_hz = 1 * 1000 * 1000;
+    as5145p_right_spi_devcfg->clock_speed_hz = 10 * 1000 * 1000;
     as5145p_right_spi_devcfg->spics_io_num = SPI_R_ENC_SSL;
-    as5145p_right_spi_devcfg->queue_size = 1;
+    as5145p_right_spi_devcfg->queue_size = 7;
+    as5145p_right_spi_devcfg->pre_cb = nullptr;
+    as5145p_right_spi_devcfg->flags = SPI_DEVICE_NO_DUMMY;
   }
 
   set_gpio_state(SPI_L_ENC_SSL, true);
@@ -193,185 +201,12 @@ void SensingTask::task() {
 
   int64_t last_enc_l_time = 0;
   int64_t now_enc_l_time = 0;
+  // while (1) {
+  //   int32_t enc_r = enc_r_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
+  //   vTaskDelay(100);
+  // }
+
   while (1) {
-    // printf("%c[2J", ESC);   /* 画面消去 */
-    // printf("%c[0;0H", ESC); /* 戦闘戻す*/
-
-    if (adc_flag) {
-      adc_if.write1byte(0x11, 0x07); // battery: AIN7
-      sensing_result->battery.raw = adc_if.read2byte(0x10);
-      sensing_result->battery.raw = adc_if.read2byte(0x10);
-    }
-
-    if (adc_flag) {
-
-      // before
-      adc_if.write1byte(0x11, 0x06);
-      sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
-      adc_if.write1byte(0x11, 0x05);
-      sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
-      adc_if.write1byte(0x11, 0x04);
-      sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
-      adc_if.write1byte(0x11, 0x03);
-      sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
-      adc_if.write1byte(0x11, 0x02);
-      sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
-      adc_if.write1byte(0x11, 0x01);
-      sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
-
-      // L90: AIN6
-      adc_if.write1byte(0x11, 0x06);
-      //(A2,A1,A0):S5(1,0,0)
-      set_gpio_state(LED_A0, false);
-      set_gpio_state(LED_A1, false);
-      set_gpio_state(LED_A2, true);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.left90.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.left90.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-    if (adc_flag) {
-      // R90: AIN5
-      adc_if.write1byte(0x11, 0x05);
-      //(A2,A1,A0):S3(0,1,0)
-      set_gpio_state(LED_A0, false);
-      set_gpio_state(LED_A1, true);
-      set_gpio_state(LED_A2, false);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.right90.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.right90.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-    if (adc_flag) {
-      // R45_2: AIN4
-      adc_if.write1byte(0x11, 0x04);
-      //(A2,A1,A0)=S4(0,1,1)
-      set_gpio_state(LED_A0, true);
-      set_gpio_state(LED_A1, true);
-      set_gpio_state(LED_A2, false);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.right45_2.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.right45_2.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-    if (adc_flag) {
-      // L45: AIN3
-      adc_if.write1byte(0x11, 0x03);
-      //(A2,A1,A0): S8(1,1,1)
-      set_gpio_state(LED_A0, true);
-      set_gpio_state(LED_A1, true);
-      set_gpio_state(LED_A2, true);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-    if (adc_flag) {
-      // R45: AIN2
-      adc_if.write1byte(0x11, 0x02);
-      //(A2,A1,A0): S7(1,1,0)
-      set_gpio_state(LED_A0, false);
-      set_gpio_state(LED_A1, true);
-      set_gpio_state(LED_A2, true);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-    if (adc_flag) {
-      // L45_2: AIN1
-      adc_if.write1byte(0x11, 0x01);
-      //(A2,A1,A0): S6(1,0,1)
-      set_gpio_state(LED_A0, true);
-      set_gpio_state(LED_A1, false);
-      set_gpio_state(LED_A2, true);
-      set_gpio_state(LED_EN, true);
-      for (int i = 0; i < param->led_light_delay_cnt; i++) {
-        lec_cnt++;
-      }
-      sensing_result->led_sen_after.left45_2.raw = adc_if.read2byte(0x10);
-      sensing_result->led_sen_after.left45_2.raw = adc_if.read2byte(0x10);
-      set_gpio_state(LED_EN, false);
-    }
-
-    // gyro_if.req_read2byte_itr(0x26);
-    // se->gyro_list[4] = gyro_if.read_2byte_itr();
-
-    // auto enc_r = enc_r_if.read2byte(0x3F, 0xFF, true); // & 0x3FFF;
-    // auto enc_l = enc_l_if.read2byte(0x3F, 0xFF, false); // & 0x3FFF;
-
-    // printf("gyro: %d\n", se->gyro_list[4]);
-    // printf("battery: %d\n", sensing_result->battery.raw);
-    // printf("L90: %d\n", sensing_result->led_sen_before.left90.raw);
-    // printf("L45_2: %d\n", sensing_result->led_sen_before.left45_2.raw);
-    // printf("L45: %d\n", sensing_result->led_sen_before.left45.raw);
-
-    // printf("R45: %d\n", sensing_result->led_sen_before.right45.raw);
-    // printf("R45_2: %d\n", sensing_result->led_sen_before.right45_2.raw);
-    // printf("R90: %d\n", sensing_result->led_sen_before.right90.raw);
-
-    // printf("enc_l: %ld\n", enc_l);
-    // printf("enc_r: %ld\n", enc_r);
-
-    if (enc_flag) {
-      now_enc_r_time = esp_timer_get_time();
-      int32_t enc_r = enc_r_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
-      now_enc_l_time = esp_timer_get_time();
-      int32_t enc_l = enc_l_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
-      const auto enc_r_dt =
-          ((float)(now_enc_r_time - last_enc_r_time)) / 1000000.0;
-      se->encoder.right_old = se->encoder.right;
-      se->encoder.right = enc_r;
-      const auto enc_l_dt =
-          ((float)(now_enc_l_time - last_enc_l_time)) / 1000000.0;
-      se->encoder.left_old = se->encoder.left;
-      se->encoder.left = enc_l;
-
-      // spi_device_polling_transmit(spi_r, &t_r); // Transmit!
-      // printf("t_r.rx_data[0]: %d, t_r.rx_data[1]: %d, t_r.rx_data[2]: %d, "
-      //        "t_r.rx_data[3]: %d\n",
-      //        t_r.rx_data[0], t_r.rx_data[1], t_r.rx_data[2], t_r.rx_data[3]);
-      // spi_device_polling_transmit(spi_l, &t_l); // Transmit!
-      // printf("t_l.rx_data[0]: %d, t_l.rx_data[1]: %d, t_l.rx_data[2]: %d, "
-      //        "t_l.rx_data[3]: %d\n",
-      //        t_l.rx_data[0], t_l.rx_data[1], t_l.rx_data[2], t_l.rx_data[3]);
-    }
-
-    se->battery.data = BATTERY_GAIN * 4 * sensing_result->battery.raw / 4096;
-    se->led_sen.right90.raw = std::max(
-        se->led_sen_after.right90.raw - se->led_sen_before.right90.raw, 0);
-    se->led_sen.right45.raw = std::max(
-        se->led_sen_after.right45.raw - se->led_sen_before.right45.raw, 0);
-    se->led_sen.left45.raw = std::max(
-        se->led_sen_after.left45.raw - se->led_sen_before.left45.raw, 0);
-    se->led_sen.left90.raw = std::max(
-        se->led_sen_after.left90.raw - se->led_sen_before.left90.raw, 0);
-    se->led_sen.front.raw =
-        (se->led_sen.left90.raw + se->led_sen.right90.raw) / 2;
-
-    vTaskDelay(1.0 / portTICK_PERIOD_MS);
-    continue;
     last_gyro_time = now_gyro_time;
     last_enc_r_time = now_enc_r_time;
     last_enc_l_time = now_enc_l_time;
@@ -388,13 +223,16 @@ void SensingTask::task() {
     se->calc_time = (int16_t)(start - start_before);
     se->sensing_timestamp = start;
     const float tmp_dt = ((float)se->calc_time) / 1000000.0;
-    now_gyro_time = esp_timer_get_time();
-    const float gyro_dt = ((float)(now_gyro_time - last_gyro_time)) / 1000000.0;
-    gyro_if.req_read2byte_itr(0x26);
+
     start2 = esp_timer_get_time();
 
     if (skip_sensing) {
-      adc2_get_raw(BATTERY, width, &sensing_result->battery.raw);
+      auto start_battery = esp_timer_get_time();
+      adc_if.write1byte(0x11, 0x07); // battery: AIN7
+      sensing_result->battery.raw = adc_if.read2byte(0x10);
+      sensing_result->battery.raw = adc_if.read2byte(0x10);
+      auto end_battery = esp_timer_get_time();
+      se->calc_battery_time = (int16_t)(end_battery - start_battery);
     }
 
     if (pt->search_mode && tgt_val->motion_type == MotionType::STRAIGHT) {
@@ -432,38 +270,55 @@ void SensingTask::task() {
       r90 = l90 = true;
       r45 = l45 = true;
     }
+    // r90 = l90 = r45 = l45 = false;
 
+    auto start3 = esp_timer_get_time();
     // LED_OFF ADC
     if (skip_sensing) {
       if (r90) {
-        adc2_get_raw(SEN_R90, width,
-                     &sensing_result->led_sen_before.right90.raw);
+        auto tmp_start = esp_timer_get_time();
+        adc_if.write1byte(0x11, 0x05);
+        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
+        auto tmp_end = esp_timer_get_time();
+        se->calc_led_sen_before_right90_time = (int16_t)(tmp_end - tmp_start);
       } else {
         sensing_result->led_sen_before.right90.raw = 0;
       }
-      adc2_get_raw(BATTERY, width, &sensing_result->battery.raw);
       if (l90) {
-        adc2_get_raw(SEN_L90, width,
-                     &sensing_result->led_sen_before.left90.raw);
+        auto tmp_start = esp_timer_get_time();
+        adc_if.write1byte(0x11, 0x06);
+        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
+        auto tmp_end = esp_timer_get_time();
+        se->calc_led_sen_before_left90_time = (int16_t)(tmp_end - tmp_start);
       } else {
         sensing_result->led_sen_before.left90.raw = 0;
       }
     } else {
-
       if (r45) {
-        adc2_get_raw(SEN_R45, width,
-                     &sensing_result->led_sen_before.right45.raw);
+        auto tmp_start = esp_timer_get_time();
+        adc_if.write1byte(0x11, 0x02);
+        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
+        adc_if.write1byte(0x11, 0x04);
+        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
+        auto tmp_end = esp_timer_get_time();
+        se->calc_led_before_righ45_time = (int16_t)(tmp_end - tmp_start);
       } else {
         sensing_result->led_sen_before.right45.raw = 0;
       }
       if (l45) {
-        adc2_get_raw(SEN_L45, width,
-                     &sensing_result->led_sen_before.left45.raw);
-      } else {
-        sensing_result->led_sen_before.left45.raw = 0;
+        adc_if.write1byte(0x11, 0x03);
+        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
+        adc_if.write1byte(0x11, 0x01);
+        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
       }
     }
-
+    auto end3 = esp_timer_get_time();
     r90 = true;
     l90 = true;
     r45 = true;
@@ -480,8 +335,8 @@ void SensingTask::task() {
       // }
     };
     if (pt->mode_select) {
-      led_on = false;
     }
+      led_on = false;
     if (led_on) {
       if (pt->search_mode && pt->tgt_val->motion_type == MotionType::STRAIGHT) {
         // 加速中は正面は発光させない
@@ -518,53 +373,100 @@ void SensingTask::task() {
         r90 = l90 = true;
         r45 = l45 = true;
       }
+      // r90 = l90 = r45 = l45 = false;
+      auto start4 = esp_timer_get_time();
       if (r90) { // R90
+        // R90: AIN5
+        adc_if.write1byte(0x11, 0x05);
+        //(A2,A1,A0):S3(0,1,0)
         set_gpio_state(LED_A0, false);
-        set_gpio_state(LED_A1, false);
+        set_gpio_state(LED_A1, true);
+        set_gpio_state(LED_A2, false);
         set_gpio_state(LED_EN, true);
-        lec_cnt = 0;
         for (int i = 0; i < param->led_light_delay_cnt; i++) {
           lec_cnt++;
         }
-        adc2_get_raw(SEN_R90, width, &se->led_sen_after.right90.raw);
+        sensing_result->led_sen_after.right90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.right90.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
       }
       if (l90) { // L90
-        set_gpio_state(LED_A0, true);
+        // L90: AIN6
+        adc_if.write1byte(0x11, 0x06);
+        //(A2,A1,A0):S5(1,0,0)
+        set_gpio_state(LED_A0, false);
         set_gpio_state(LED_A1, false);
+        set_gpio_state(LED_A2, true);
         set_gpio_state(LED_EN, true);
-        lec_cnt = 0;
         for (int i = 0; i < param->led_light_delay_cnt; i++) {
           lec_cnt++;
         }
-        adc2_get_raw(SEN_L90, width, &se->led_sen_after.left90.raw);
+        sensing_result->led_sen_after.left90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.left90.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
       }
       if (r45) { // R45
+        // R45: AIN2
+        adc_if.write1byte(0x11, 0x02);
+        //(A2,A1,A0): S7(1,1,0)
         set_gpio_state(LED_A0, false);
         set_gpio_state(LED_A1, true);
+        set_gpio_state(LED_A2, true);
         set_gpio_state(LED_EN, true);
-        lec_cnt = 0;
         for (int i = 0; i < param->led_light_delay_cnt; i++) {
           lec_cnt++;
         }
-        adc2_get_raw(SEN_R45, width, &se->led_sen_after.right45.raw);
-      }
-      if (l45) { // L45
+        sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
+
+        // R45_2: AIN4
+        adc_if.write1byte(0x11, 0x04);
+        //(A2,A1,A0)=S4(0,1,1)
         set_gpio_state(LED_A0, true);
         set_gpio_state(LED_A1, true);
+        set_gpio_state(LED_A2, false);
         set_gpio_state(LED_EN, true);
-        lec_cnt = 0;
         for (int i = 0; i < param->led_light_delay_cnt; i++) {
           lec_cnt++;
         }
-        adc2_get_raw(SEN_L45, width, &se->led_sen_after.left45.raw);
+        sensing_result->led_sen_after.right45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.right45_2.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
+      }
+      if (l45) { // L45
+        // L45: AIN3
+        adc_if.write1byte(0x11, 0x03);
+        //(A2,A1,A0): S8(1,1,1)
+        set_gpio_state(LED_A0, true);
+        set_gpio_state(LED_A1, true);
+        set_gpio_state(LED_A2, true);
+        set_gpio_state(LED_EN, true);
+        for (int i = 0; i < param->led_light_delay_cnt; i++) {
+          lec_cnt++;
+        }
+        sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
+
+        // L45_2: AIN1
+        adc_if.write1byte(0x11, 0x01);
+        //(A2,A1,A0): S6(1,0,1)
+        set_gpio_state(LED_A0, true);
+        set_gpio_state(LED_A1, false);
+        set_gpio_state(LED_A2, true);
+        set_gpio_state(LED_EN, true);
+        for (int i = 0; i < param->led_light_delay_cnt; i++) {
+          lec_cnt++;
+        }
+        sensing_result->led_sen_after.left45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_after.left45_2.raw = adc_if.read2byte(0x10);
+        set_gpio_state(LED_EN, false);
       }
     }
-
+    auto end4 = esp_timer_get_time();
     end2 = esp_timer_get_time();
     set_gpio_state(LED_EN, false);
-
-    // se->battery.data = linearInterpolation(x, y, se->battery.raw);
-    // se->battery.data = linearInterpolation(x, y, se->battery.raw);
 
     se->battery.data = BATTERY_GAIN * 4 * sensing_result->battery.raw / 4096;
     if (led_on) {
@@ -585,34 +487,39 @@ void SensingTask::task() {
       se->led_sen.left90.raw = 0;
       se->led_sen.front.raw = 0;
     }
-
+    auto start5 = esp_timer_get_time();
     // gyro_if.req_read2byte_itr(0x26);
+    now_gyro_time = esp_timer_get_time();
+    const float gyro_dt = ((float)(now_gyro_time - last_gyro_time)) / 1000000.0;
+    gyro_if.req_read2byte_itr(0x26);
     se->gyro_list[4] = gyro_if.read_2byte_itr();
     se->gyro.raw = se->gyro_list[4];
     se->gyro.data = (float)(se->gyro_list[4]);
-    // int32_t enc_r = (enc_if.read2byte(0x00, 0x00, true) & 0xFFFF) >> 2;
-    // now_enc_r_time = esp_timer_get_time();
-    // int32_t enc_r = enc_r_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
-    // const auto enc_r_dt =
-    //     ((float)(now_enc_r_time - last_enc_r_time)) / 1000000.0;
-    // se->encoder.right_old = se->encoder.right;
-    // se->encoder.right = enc_r;
 
-    // // int32_t enc_l = (enc_if.read2byte(0x00, 0x00, false) & 0xFFFF) >> 2;
-    // now_enc_l_time = esp_timer_get_time();
-    // int32_t enc_l = enc_l_if.read2byte(0x3F, 0xFF, false) & 0x3FFF;
-    // const auto enc_l_dt =
-    //     ((float)(now_enc_l_time - last_enc_l_time)) / 1000000.0;
-    // se->encoder.left_old = se->encoder.left;
-    // se->encoder.left = enc_l;
+    now_enc_r_time = esp_timer_get_time();
+    int32_t enc_r = enc_r_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
+    const auto enc_r_dt =
+        ((float)(now_enc_r_time - last_enc_r_time)) / 1000000.0;
+    se->encoder.right_old = se->encoder.right;
+    se->encoder.right = enc_r;
 
-    // calc_vel(gyro_dt, enc_l_dt, enc_r_dt);
+    now_enc_l_time = esp_timer_get_time();
+    int32_t enc_l = enc_l_if.read2byte(0x3F, 0xFF, false) & 0x3FFF;
+    const auto enc_l_dt =
+        ((float)(now_enc_l_time - last_enc_l_time)) / 1000000.0;
+    se->encoder.left_old = se->encoder.left;
+    se->encoder.left = enc_l;
 
+    calc_vel(gyro_dt, enc_l_dt, enc_r_dt);
+    auto end5 = esp_timer_get_time();
     // cout << enc_r << ", " << enc_l << endl;
     end = esp_timer_get_time();
     se->calc_time2 = (int16_t)(end - start);
-    // printf("sen: %d, %d\n", (int16_t)(end - start), (int16_t)(end2 -
-    // start2));
+
+    // printf("time: %d, %d, %lld, %lld, %lld, %lld, %lld, %lld\n",
+    // se->calc_time,
+    //        se->calc_time2, end - start2, end2 - start2, end3 - start3,
+    //        end5 - start5, end5 - start5, end5 - start5);
     vTaskDelay(1.0 / portTICK_PERIOD_MS);
   }
 }

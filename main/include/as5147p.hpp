@@ -9,6 +9,10 @@
 #include <bitset>
 #include <cstring>
 #include <string.h>
+#include "driver/pcnt.h"
+#include "driver/timer.h"
+#include "esp_timer.h"
+
 
 class AS5147P {
 public:

@@ -8,6 +8,9 @@
 #include "freertos/task.h"
 #include <cstring>
 #include <string.h>
+#include "driver/pcnt.h"
+#include "driver/timer.h"
+#include "esp_timer.h"
 
 union adc_config_t {
   struct {

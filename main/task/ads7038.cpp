@@ -14,23 +14,25 @@ void ADS7038::init(spi_host_device_t spi_dev,
                    std::shared_ptr<spi_bus_config_t> &bus,
                    std::shared_ptr<spi_device_interface_config_t> &devcfg) {
   esp_err_t ret;
-  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
+  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_CH_AUTO);
   ESP_ERROR_CHECK(ret);
   ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
   ESP_ERROR_CHECK(ret);
 }
 uint8_t ADS7038::write1byte(const uint8_t address, const uint8_t data) {
   esp_err_t ret;
-  spi_transaction_t t;
-  memset(&t, 0, sizeof(t)); // Zero out the transaction
-
-  t.length = 24; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
-  t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-
+  spi_transaction_t *rtrans;
+  static spi_transaction_t t;
+  static bool is_initialized = false;
+  if (!is_initialized) {
+    memset(&t, 0, sizeof(t)); // Zero out the transaction once
+    t.flags = SPI_TRANS_USE_TXDATA;
+    t.length = 24; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+    is_initialized = true;
+  }
   t.tx_data[0] = 0x08;
   t.tx_data[1] = (uint8_t)(0xff & address);
   t.tx_data[2] = (uint8_t)(0xff & data);
-
   ret = spi_device_polling_transmit(spi, &t); // Transmit!
   assert(ret == ESP_OK);                      // Should have had no issues.
   return 0;
@@ -83,23 +85,50 @@ uint8_t ADS7038::read1byte(const uint8_t address) {
 
 uint16_t ADS7038::read2byte(const uint16_t address) {
   esp_err_t ret;
-  spi_transaction_t t;
-  memset(&t, 0, sizeof(t)); // Zero out the transaction
-  char size = 2;
-  t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-  t.length = 16 * size; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+  static spi_transaction_t t;
+  static bool is_initialized = false;
+
+  if (!is_initialized) {
+    memset(&t, 0, sizeof(t)); // Zero out the transaction once
+    t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
+    t.length = 16; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+    is_initialized = true;
+  }
+
   t.tx_data[0] = (uint8_t)(address);
   t.tx_data[1] = 0;
-  t.tx_data[2] = 0;
-  ret = spi_device_polling_transmit(spi, &t); // Transmit!
-  assert(ret == ESP_OK);                      // Should have had no issues.
-  // printf("%2x, %2x, %2x\n", t.rx_data[0], t.rx_data[1], t.rx_data[2]);
-  const auto data = (unsigned short) // 12bit data
-      (((unsigned short)(t.rx_data[0]) << 8) |
-       ((unsigned short)(t.rx_data[1])));
 
+  // Measure the time taken by spi_device_queue_trans
+  // int64_t start_time = esp_timer_get_time();
+  // ret = spi_device_queue_trans(spi, &t, portMAX_DELAY); // Queue the
+  // transaction int64_t end_time = esp_timer_get_time();
+  // printf("spi_device_queue_trans time: %lld usec\n", end_time - start_time);
+
+  // assert(ret == ESP_OK); // Should have had no issues.
+
+  // spi_transaction_t *rtrans;
+  // start_time = esp_timer_get_time();
+  // ret = spi_device_get_trans_result(
+  //     spi, &rtrans, portMAX_DELAY); // Wait for the transaction to complete
+  // end_time = esp_timer_get_time();
+  // printf("spi_device_get_trans_result time: %lld usec\n",
+  //        end_time - start_time);
+
+  int64_t start_time = esp_timer_get_time();
+  ret = spi_device_polling_transmit(spi, &t); // Transmit!
+  int64_t end_time = esp_timer_get_time();
+  // printf("time: %lld usec\n", end_time - start_time);
+  const auto data = (unsigned short)(((unsigned short)(t.rx_data[0]) << 8) |
+                                     ((unsigned short)(t.rx_data[1])));
+
+  // assert(ret == ESP_OK); // Should have had no issues.
+
+  // const auto data =
+  //     (unsigned short)(((unsigned short)(rtrans->rx_data[0]) << 8) |
+  //                      ((unsigned short)(rtrans->rx_data[1])));
   return (data & 0xfff0) >> 4;
 }
+
 #define MAX11128_MODE_CNTL (uint16_t)0x0000   // 0b0          followed by 0s
 #define MAX11128_MODE_MANUAL (uint16_t)0x0800 // 0b00001      followed by 0s
 #define MAX11128_CONFIG (uint16_t)0x8000      // 0b1000       followed by 0s
@@ -127,10 +156,8 @@ uint16_t ADS7038::read2byte(const uint16_t address) {
 // }
 
 void ADS7038::setup() {
-
-  write1byte(0x10, 0x00); //manual sequance mode
+  write1byte(0x10, 0x00); // manual sequance mode
   write1byte(0x04, 0x00);
-
 }
 void ADS7038::set_gpio_state(gpio_num_t gpio_num, int state) {
   const int num = (int)gpio_num;

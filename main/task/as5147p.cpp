@@ -10,8 +10,7 @@ void AS5147P::init(spi_host_device_t spi_dev,
   // ESP_ERROR_CHECK(ret);
   ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
   ESP_ERROR_CHECK(ret);
-  
-// devcfg->spics_io_num
+  // devcfg->spics_io_num
   // esp_err_t ret;
   // spi_bus_config_t buscfg = {
   //     .mosi_io_num = SPI_R_MOSI,
@@ -61,14 +60,54 @@ uint8_t AS5147P::read1byte(const uint8_t address) { return 0; }
 
 int16_t AS5147P::read2byte(const uint16_t address) { return 0; }
 
+// uint32_t AS5147P::read2byte(const uint8_t address1, const uint8_t address2,
+//                             bool rorl) {
+//   esp_err_t ret;
+
+//   memset(&t, 0, sizeof(t)); // Zero out the transaction
+//   t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
+//   t.length = 16; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+//   auto res = _spiCalcEvenParity(address1 | READ_FLAG2);
+//   if (res) {
+//     t.tx_data[0] = (address1 | READ_FLAG2 | PARITY_FLAG);
+//   } else {
+//     t.tx_data[0] = (address1 | READ_FLAG2);
+//   }
+//   t.tx_data[1] = (address2);
+//   t.tx_data[2] = 0;
+//   t.tx_data[3] = 0;
+//   ret = spi_device_polling_transmit(spi, &t); // Transmit!
+//   assert(ret == ESP_OK);
+
+//   // printf("t.rx_data[0]: %d, t.rx_data[1]: %d, t.rx_data[2]: %d,
+//   t.rx_data[3]: "
+//   //        "%d\n",
+//   //        t.rx_data[0], t.rx_data[1], t.rx_data[2], t.rx_data[3]);
+//   return (int32_t)((uint16_t)(t.rx_data[0]) << 8) | (uint16_t)(t.rx_data[1]);
+
+//   // uint16_t before = (uint16_t)((t.rx_data[0] << 8) | (t.rx_data[1]));
+//   // uint16_t after = (uint16_t)(t.rx_data[0] << 6) | (t.rx_data[1] >> 2);
+
+//   // printf("before: %d, after: %d\n", before, after);
+
+//   // return after; //(uint32_t)((uint16_t)(t.rx_data[0]) << 8) |
+//   //(uint16_t)(t.rx_data[1]);
+// }
+
 uint32_t AS5147P::read2byte(const uint8_t address1, const uint8_t address2,
                             bool rorl) {
   esp_err_t ret;
-  spi_transaction_t t;
 
-  memset(&t, 0, sizeof(t)); // Zero out the transaction
-  t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-  t.length = 16; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+  static spi_transaction_t t;
+  static bool is_initialized = false;
+
+  if (!is_initialized) {
+    memset(&t, 0, sizeof(t)); // Zero out the transaction once
+    t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
+    t.length = 16; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+    is_initialized = true;
+  }
+
   auto res = _spiCalcEvenParity(address1 | READ_FLAG2);
   if (res) {
     t.tx_data[0] = (address1 | READ_FLAG2 | PARITY_FLAG);
@@ -78,21 +117,46 @@ uint32_t AS5147P::read2byte(const uint8_t address1, const uint8_t address2,
   t.tx_data[1] = (address2);
   t.tx_data[2] = 0;
   t.tx_data[3] = 0;
+  int64_t start_time = esp_timer_get_time();
   ret = spi_device_polling_transmit(spi, &t); // Transmit!
-  assert(ret == ESP_OK);
-
-  // printf("t.rx_data[0]: %d, t.rx_data[1]: %d, t.rx_data[2]: %d, t.rx_data[3]: "
-  //        "%d\n",
-  //        t.rx_data[0], t.rx_data[1], t.rx_data[2], t.rx_data[3]);
+  int64_t end_time = esp_timer_get_time();
+  // printf("time: %lld usec\n", end_time - start_time);
   return (int32_t)((uint16_t)(t.rx_data[0]) << 8) | (uint16_t)(t.rx_data[1]);
 
-  // uint16_t before = (uint16_t)((t.rx_data[0] << 8) | (t.rx_data[1]));
-  // uint16_t after = (uint16_t)(t.rx_data[0] << 6) | (t.rx_data[1] >> 2);
+  // spi_device_polling_start(spi, &t, portMAX_DELAY);
+  // spi_device_polling_end(spi, portMAX_DELAY);
+  // int64_t end_time2 = esp_timer_get_time();
 
-  // printf("before: %d, after: %d\n", before, after);
+  // printf("time1: %lld usec, time2: %lld usec\n", end_time - start_time,
+  //        end_time2 - end_time);
 
-  // return after; //(uint32_t)((uint16_t)(t.rx_data[0]) << 8) |
-  //(uint16_t)(t.rx_data[1]);
+  // int64_t start_time2 = esp_timer_get_time();
+  // ret = spi_device_queue_trans(spi, &t, portMAX_DELAY); // Queue the
+  // int64_t end_time4 = esp_timer_get_time();
+
+  // spi_transaction_t *rtrans;
+  // start_time = esp_timer_get_time();
+  // ret = spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
+  // end_time = esp_timer_get_time();
+  // printf("time4: %lld usec, time5: %lld usec\n", end_time4 - start_time2,
+  //        end_time - start_time);
+  // return 0;
+
+  // int64_t start_time = esp_timer_get_time();
+  // ret = spi_device_queue_trans(spi, &t, portMAX_DELAY); // Queue the
+  // transaction int64_t end_time = esp_timer_get_time();
+  // printf("spi_device_queue_trans time: %lld usec\n", end_time - start_time);
+
+  // spi_transaction_t *rtrans;
+  // start_time = esp_timer_get_time();
+  // ret = spi_device_get_trans_result(
+  //     spi, &rtrans, portMAX_DELAY); // Wait for the transaction to complete
+  // end_time = esp_timer_get_time();
+  // printf("spi_device_get_trans_result time: %lld usec\n",
+  //        end_time - start_time);
+
+  // return (int32_t)((uint16_t)(rtrans->rx_data[0]) << 8) |
+  //        (uint16_t)(rtrans->rx_data[1]);
 }
 
 int16_t AS5147P::read2byte_2(const uint8_t address1, const uint8_t address2) {

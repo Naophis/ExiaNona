@@ -136,30 +136,33 @@ void MainTask::dump1() {
            sensing_result->led_sen_after.right45_2.raw,
            sensing_result->led_sen_after.right45.raw,
            sensing_result->led_sen_after.right90.raw);
-    printf("sensor_dist(near): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-           sensing_result->ego.left90_dist,  //
-           sensing_result->ego.left45_dist,  //
-           sensing_result->ego.left45_2_dist,  //
-           sensing_result->ego.front_dist,   //
-           sensing_result->ego.right45_2_dist, //
-           sensing_result->ego.right45_dist, //
-           sensing_result->ego.right90_dist);
-    printf("sensor_dist(mid): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-           sensing_result->ego.left90_mid_dist, //
-           sensing_result->ego.left45_dist,     //
-           sensing_result->ego.left45_2_dist,  //
-           sensing_result->ego.front_mid_dist,  //
-           sensing_result->ego.right45_2_dist,    //
-           sensing_result->ego.right45_dist,    //
-           sensing_result->ego.right90_mid_dist);
-    printf("sensor_dist(far): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-           sensing_result->ego.left90_far_dist, //
-           sensing_result->ego.left45_dist,     //
-           sensing_result->ego.left45_2_dist,  //
-           sensing_result->ego.front_far_dist,  //
-           sensing_result->ego.right45_2_dist, //
-           sensing_result->ego.right45_dist,    //
-           sensing_result->ego.right90_far_dist);
+    printf(
+        "sensor_dist(near): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
+        sensing_result->ego.left90_dist,    //
+        sensing_result->ego.left45_dist,    //
+        sensing_result->ego.left45_2_dist,  //
+        sensing_result->ego.front_dist,     //
+        sensing_result->ego.right45_2_dist, //
+        sensing_result->ego.right45_dist,   //
+        sensing_result->ego.right90_dist);
+    printf(
+        "sensor_dist(mid): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
+        sensing_result->ego.left90_mid_dist, //
+        sensing_result->ego.left45_dist,     //
+        sensing_result->ego.left45_2_dist,   //
+        sensing_result->ego.front_mid_dist,  //
+        sensing_result->ego.right45_2_dist,  //
+        sensing_result->ego.right45_dist,    //
+        sensing_result->ego.right90_mid_dist);
+    printf(
+        "sensor_dist(far): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
+        sensing_result->ego.left90_far_dist, //
+        sensing_result->ego.left45_dist,     //
+        sensing_result->ego.left45_2_dist,   //
+        sensing_result->ego.front_far_dist,  //
+        sensing_result->ego.right45_2_dist,  //
+        sensing_result->ego.right45_dist,    //
+        sensing_result->ego.right90_far_dist);
 
     printf("sensor: %0.1f, %0.1f, %0.1f, %0.1f, %0.1f\n",
            param->sen_ref_p.search_exist.left90,
@@ -194,7 +197,14 @@ void MainTask::dump1() {
 
     printf("planning_time: %d\n", tgt_val->calc_time);
     printf("planning_time_diff: %d\n", tgt_val->calc_time_diff);
-    printf("sensing_time: %d\n", sensing_result->calc_time);
+    printf("sensing_time: %d\n", sensing_result->calc_time2);
+    printf(" - %d, %d, %d, %d\n", sensing_result->calc_battery_time,
+           sensing_result->calc_led_sen_before_left90_time,
+           sensing_result->calc_led_before_righ45_time
+
+           ,
+           sensing_result->calc_led_sen_before_right90_time);
+    printf("sensing_time_diff: %d\n", sensing_result->calc_time);
 
     if (ui->button_state()) {
       tgt_val->ego_in.ang = tgt_val->ego_in.dist = 0;
