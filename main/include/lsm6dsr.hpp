@@ -2,8 +2,11 @@
 #define LSM6DSR_HPP
 
 #include "defines.hpp"
+#include "driver/pcnt.h"
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
+#include "driver/timer.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <cstring>
@@ -25,6 +28,7 @@ public:
   uint8_t read_1byte_itr();
 
   void req_read2byte_itr(const uint8_t address);
+  int16_t read_2byte(const uint8_t address);
   int16_t read_2byte_itr();
   signed short read_2byte_itr2(std::vector<int> &list);
   void setup();

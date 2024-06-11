@@ -201,8 +201,23 @@ void SensingTask::task() {
 
   int64_t last_enc_l_time = 0;
   int64_t now_enc_l_time = 0;
+
+  // adc2_config_channel_atten(SEN_R90, atten);
   // while (1) {
-  //   int32_t enc_r = enc_r_if.read2byte(0x3F, 0xFF, true) & 0x3FFF;
+  //   auto start_adc = esp_timer_get_time();
+  //   adc2_get_raw(SEN_R90, width,
+  //   &sensing_result->led_sen_before.right90.raw); auto end_adc =
+  //   esp_timer_get_time();
+
+  //   printf("time: %lld\n", end_adc - start_adc);
+
+  //   vTaskDelay(100);
+  // }
+
+  // while (1) {
+
+  //   gyro_if.read_2byte(0x26);
+
   //   vTaskDelay(100);
   // }
 
@@ -213,10 +228,10 @@ void SensingTask::task() {
 
     skip_sensing = !skip_sensing;
 
-    bool r90 = true;
-    bool l90 = true;
-    bool r45 = true;
-    bool l45 = true;
+    r90 = true;
+    l90 = true;
+    r45 = true;
+    l45 = true;
 
     start_before = start;
     start = esp_timer_get_time();
@@ -226,158 +241,38 @@ void SensingTask::task() {
 
     start2 = esp_timer_get_time();
 
+    auto start_battery = esp_timer_get_time();
     if (skip_sensing) {
-      auto start_battery = esp_timer_get_time();
-      adc_if.write1byte(0x11, 0x07); // battery: AIN7
+      adc_if.write1byte_2(0x11, 0x07); // battery: AIN7
       sensing_result->battery.raw = adc_if.read2byte(0x10);
       sensing_result->battery.raw = adc_if.read2byte(0x10);
-      auto end_battery = esp_timer_get_time();
-      se->calc_battery_time = (int16_t)(end_battery - start_battery);
     }
+    auto end_battery = esp_timer_get_time();
+    se->calc_battery_time = (int16_t)(end_battery - start_battery);
 
-    if (pt->search_mode && tgt_val->motion_type == MotionType::STRAIGHT) {
-      // 加速中は正面は発光させない
-      if (tgt_val->ego_in.state == 0) {
-        r90 = l90 = false;
-      }
-    }
-    if (pt->search_mode && tgt_val->nmr.sct == SensorCtrlType::NONE) {
-      // 探索中、壁制御しないときはOFF
-      r90 = l90 = false;
-      r45 = l45 = false;
-    }
-    if (tgt_val->nmr.sct == SensorCtrlType::Dia) {
-      if (tgt_val->ego_in.state == 0) {
-        // 斜め壁制御加速中は横は発光させない
-        r45 = l45 = false;
-      }
-    }
-    if (tgt_val->nmr.sct == SensorCtrlType::Straight) {
-      r90 = l90 = true;
-      r45 = l45 = true;
-    }
-    if (tgt_val->motion_type == MotionType::READY) {
-      // motion check用
-      r90 = l90 = true;
-      r45 = l45 = false;
-    }
-    if (tgt_val->motion_type == MotionType::FRONT_CTRL) {
-      // 前壁制御中は横は発光させない
-      r90 = l90 = true;
-      r45 = l45 = false;
-    }
-    if (tgt_val->motion_type == MotionType::SENSING_DUMP) {
-      r90 = l90 = true;
-      r45 = l45 = true;
-    }
     // r90 = l90 = r45 = l45 = false;
-
-    auto start3 = esp_timer_get_time();
-    // LED_OFF ADC
-    if (skip_sensing) {
-      if (r90) {
-        auto tmp_start = esp_timer_get_time();
-        adc_if.write1byte(0x11, 0x05);
-        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
-        auto tmp_end = esp_timer_get_time();
-        se->calc_led_sen_before_right90_time = (int16_t)(tmp_end - tmp_start);
-      } else {
-        sensing_result->led_sen_before.right90.raw = 0;
-      }
-      if (l90) {
-        auto tmp_start = esp_timer_get_time();
-        adc_if.write1byte(0x11, 0x06);
-        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
-        auto tmp_end = esp_timer_get_time();
-        se->calc_led_sen_before_left90_time = (int16_t)(tmp_end - tmp_start);
-      } else {
-        sensing_result->led_sen_before.left90.raw = 0;
-      }
-    } else {
-      if (r45) {
-        auto tmp_start = esp_timer_get_time();
-        adc_if.write1byte(0x11, 0x02);
-        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
-        adc_if.write1byte(0x11, 0x04);
-        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
-        auto tmp_end = esp_timer_get_time();
-        se->calc_led_before_righ45_time = (int16_t)(tmp_end - tmp_start);
-      } else {
-        sensing_result->led_sen_before.right45.raw = 0;
-      }
-      if (l45) {
-        adc_if.write1byte(0x11, 0x03);
-        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
-        adc_if.write1byte(0x11, 0x01);
-        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
-        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
-      }
-    }
-    auto end3 = esp_timer_get_time();
-    r90 = true;
-    l90 = true;
-    r45 = true;
-    l45 = true;
-    // LED_OFF ADC
-    // 超信地旋回中は発光をサボる
     bool led_on = true;
     if (tgt_val->motion_type == MotionType::PIVOT ||
         tgt_val->motion_type == MotionType::SLALOM) {
       led_on = false;
-      // if (tgt_val->ego_in.sla_param.counter >
-      //     (tgt_val->ego_in.sla_param.limit_time_count / 2)) {
-      //   led_on = true;
-      // }
-    };
-    if (pt->mode_select) {
     }
+    if (pt->mode_select) {
       led_on = false;
+    }
+    led_on = true;
     if (led_on) {
-      if (pt->search_mode && pt->tgt_val->motion_type == MotionType::STRAIGHT) {
-        // 加速中は正面は発光させない
-        if (pt->tgt_val->ego_in.state == 0) {
-          r90 = l90 = false;
-        }
+      change_led_mode();
+    }
+    auto start3 = esp_timer_get_time();
+    // LED_OFF ADC
+    if (r90) {
+      auto tmp_start = esp_timer_get_time();
+      adc_if.write1byte_2(0x11, 0x05);
+      if (skip_sensing) {
+        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right90.raw = adc_if.read2byte(0x10);
       }
-      if (pt->search_mode && pt->tgt_val->nmr.sct == SensorCtrlType::NONE) {
-        // 探索中、壁制御しないときはOFF
-        r90 = l90 = false;
-        r45 = l45 = false;
-      }
-      if (pt->tgt_val->nmr.sct == SensorCtrlType::Dia) {
-        if (pt->tgt_val->ego_in.state == 0) {
-          // 斜め壁制御加速中は横は発光させない
-          r45 = l45 = false;
-        }
-      }
-      if (pt->tgt_val->nmr.sct == SensorCtrlType::Straight) {
-        r90 = l90 = true;
-        r45 = l45 = true;
-      }
-      if (pt->tgt_val->motion_type == MotionType::READY) {
-        // motion check用
-        r90 = l90 = true;
-        r45 = l45 = false;
-      }
-      if (pt->tgt_val->motion_type == MotionType::FRONT_CTRL) {
-        // 前壁制御中は横は発光させない
-        r90 = l90 = true;
-        r45 = l45 = false;
-      }
-      if (pt->tgt_val->motion_type == MotionType::SENSING_DUMP) {
-        r90 = l90 = true;
-        r45 = l45 = true;
-      }
-      // r90 = l90 = r45 = l45 = false;
-      auto start4 = esp_timer_get_time();
-      if (r90) { // R90
-        // R90: AIN5
-        adc_if.write1byte(0x11, 0x05);
+      if (led_on) {
         //(A2,A1,A0):S3(0,1,0)
         set_gpio_state(LED_A0, false);
         set_gpio_state(LED_A1, true);
@@ -390,9 +285,21 @@ void SensingTask::task() {
         sensing_result->led_sen_after.right90.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
       }
-      if (l90) { // L90
-        // L90: AIN6
-        adc_if.write1byte(0x11, 0x06);
+
+      auto tmp_end = esp_timer_get_time();
+      se->calc_led_sen_before_right90_time = (int16_t)(tmp_end - tmp_start);
+
+    } else {
+      sensing_result->led_sen_before.right90.raw = 0;
+    }
+    if (l90) {
+      auto tmp_start = esp_timer_get_time();
+      adc_if.write1byte_2(0x11, 0x06);
+      if (!skip_sensing) {
+        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left90.raw = adc_if.read2byte(0x10);
+      }
+      if (led_on) { // L90
         //(A2,A1,A0):S5(1,0,0)
         set_gpio_state(LED_A0, false);
         set_gpio_state(LED_A1, false);
@@ -405,9 +312,19 @@ void SensingTask::task() {
         sensing_result->led_sen_after.left90.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
       }
-      if (r45) { // R45
-        // R45: AIN2
-        adc_if.write1byte(0x11, 0x02);
+      auto tmp_end = esp_timer_get_time();
+      se->calc_led_sen_before_left90_time = (int16_t)(tmp_end - tmp_start);
+    } else {
+      sensing_result->led_sen_before.left90.raw = 0;
+    }
+    if (r45) {
+      auto tmp_start = esp_timer_get_time();
+      adc_if.write1byte_2(0x11, 0x02);
+      if (skip_sensing) {
+        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right45.raw = adc_if.read2byte(0x10);
+      }
+      if (led_on) { // R45
         //(A2,A1,A0): S7(1,1,0)
         set_gpio_state(LED_A0, false);
         set_gpio_state(LED_A1, true);
@@ -419,10 +336,14 @@ void SensingTask::task() {
         sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
         sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
+      }
+      adc_if.write1byte_2(0x11, 0x04);
+      if (!skip_sensing) {
+        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
+      }
 
-        // R45_2: AIN4
-        adc_if.write1byte(0x11, 0x04);
-        //(A2,A1,A0)=S4(0,1,1)
+      if (led_on) {
         set_gpio_state(LED_A0, true);
         set_gpio_state(LED_A1, true);
         set_gpio_state(LED_A2, false);
@@ -434,9 +355,18 @@ void SensingTask::task() {
         sensing_result->led_sen_after.right45_2.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
       }
-      if (l45) { // L45
-        // L45: AIN3
-        adc_if.write1byte(0x11, 0x03);
+      auto tmp_end = esp_timer_get_time();
+      se->calc_led_before_righ45_time = (int16_t)(tmp_end - tmp_start);
+    } else {
+      sensing_result->led_sen_before.right45.raw = 0;
+    }
+    if (l45) {
+      adc_if.write1byte_2(0x11, 0x03);
+      if (skip_sensing) {
+        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left45.raw = adc_if.read2byte(0x10);
+      }
+      if (led_on) {
         //(A2,A1,A0): S8(1,1,1)
         set_gpio_state(LED_A0, true);
         set_gpio_state(LED_A1, true);
@@ -448,9 +378,13 @@ void SensingTask::task() {
         sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
         sensing_result->led_sen_after.left45.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
-
-        // L45_2: AIN1
-        adc_if.write1byte(0x11, 0x01);
+      }
+      adc_if.write1byte_2(0x11, 0x01);
+      if (!skip_sensing) {
+        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
+        sensing_result->led_sen_before.left45_2.raw = adc_if.read2byte(0x10);
+      }
+      if (led_on) {
         //(A2,A1,A0): S6(1,0,1)
         set_gpio_state(LED_A0, true);
         set_gpio_state(LED_A1, false);
@@ -464,6 +398,9 @@ void SensingTask::task() {
         set_gpio_state(LED_EN, false);
       }
     }
+    auto end3 = esp_timer_get_time();
+    // LED_OFF ADC
+
     auto end4 = esp_timer_get_time();
     end2 = esp_timer_get_time();
     set_gpio_state(LED_EN, false);
@@ -491,8 +428,9 @@ void SensingTask::task() {
     // gyro_if.req_read2byte_itr(0x26);
     now_gyro_time = esp_timer_get_time();
     const float gyro_dt = ((float)(now_gyro_time - last_gyro_time)) / 1000000.0;
-    gyro_if.req_read2byte_itr(0x26);
-    se->gyro_list[4] = gyro_if.read_2byte_itr();
+
+    // gyro_if.req_read2byte_itr(0x26);
+    se->gyro_list[4] = gyro_if.read_2byte(0x26);
     se->gyro.raw = se->gyro_list[4];
     se->gyro.data = (float)(se->gyro_list[4]);
 
@@ -596,4 +534,42 @@ void SensingTask::calc_vel(float gyro_dt, float enc_r_dt, float enc_l_dt) {
   tgt_val->global_pos.dist += sensing_result->ego.v_c * dt;
   tgt_val->ego_in.ang += sensing_result->ego.w_lp * gyro_dt;
   tgt_val->global_pos.ang += sensing_result->ego.w_lp * gyro_dt;
+}
+
+void SensingTask::change_led_mode() {
+  if (pt->search_mode && tgt_val->motion_type == MotionType::STRAIGHT) {
+    // 加速中は正面は発光させない
+    if (tgt_val->ego_in.state == 0) {
+      r90 = l90 = false;
+    }
+  }
+  if (pt->search_mode && tgt_val->nmr.sct == SensorCtrlType::NONE) {
+    // 探索中、壁制御しないときはOFF
+    r90 = l90 = false;
+    r45 = l45 = false;
+  }
+  if (tgt_val->nmr.sct == SensorCtrlType::Dia) {
+    if (tgt_val->ego_in.state == 0) {
+      // 斜め壁制御加速中は横は発光させない
+      r45 = l45 = false;
+    }
+  }
+  if (tgt_val->nmr.sct == SensorCtrlType::Straight) {
+    r90 = l90 = true;
+    r45 = l45 = true;
+  }
+  if (tgt_val->motion_type == MotionType::READY) {
+    // motion check用
+    r90 = l90 = true;
+    r45 = l45 = false;
+  }
+  if (tgt_val->motion_type == MotionType::FRONT_CTRL) {
+    // 前壁制御中は横は発光させない
+    r90 = l90 = true;
+    r45 = l45 = false;
+  }
+  if (tgt_val->motion_type == MotionType::SENSING_DUMP) {
+    r90 = l90 = true;
+    r45 = l45 = true;
+  }
 }

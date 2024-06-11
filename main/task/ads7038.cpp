@@ -37,6 +37,22 @@ uint8_t ADS7038::write1byte(const uint8_t address, const uint8_t data) {
   assert(ret == ESP_OK);                      // Should have had no issues.
   return 0;
 }
+uint8_t ADS7038::write1byte_2(const uint8_t address, const uint8_t data) {
+  spi_transaction_t *rtrans;
+  static spi_transaction_t t;
+  static bool is_initialized = false;
+  if (!is_initialized) {
+    memset(&t, 0, sizeof(t)); // Zero out the transaction once
+    t.flags = SPI_TRANS_USE_TXDATA;
+    t.length = 24;
+    is_initialized = true;
+  }
+  t.tx_data[0] = 0x08;
+  t.tx_data[1] = (uint8_t)(0xff & address);
+  t.tx_data[2] = (uint8_t)(0xff & data);
+  spi_device_polling_transmit(spi, &t); // Transmit!
+  return 0;
+}
 
 uint8_t ADS7038::write2byte(const uint16_t data) {
   esp_err_t ret;
@@ -97,29 +113,18 @@ uint16_t ADS7038::read2byte(const uint16_t address) {
 
   t.tx_data[0] = (uint8_t)(address);
   t.tx_data[1] = 0;
+  t.tx_data[2] = 0; // (uint8_t)(address);
+  t.tx_data[3] = 0;
 
-  // Measure the time taken by spi_device_queue_trans
   // int64_t start_time = esp_timer_get_time();
-  // ret = spi_device_queue_trans(spi, &t, portMAX_DELAY); // Queue the
-  // transaction int64_t end_time = esp_timer_get_time();
-  // printf("spi_device_queue_trans time: %lld usec\n", end_time - start_time);
-
-  // assert(ret == ESP_OK); // Should have had no issues.
-
-  // spi_transaction_t *rtrans;
-  // start_time = esp_timer_get_time();
-  // ret = spi_device_get_trans_result(
-  //     spi, &rtrans, portMAX_DELAY); // Wait for the transaction to complete
-  // end_time = esp_timer_get_time();
-  // printf("spi_device_get_trans_result time: %lld usec\n",
-  //        end_time - start_time);
-
-  int64_t start_time = esp_timer_get_time();
   ret = spi_device_polling_transmit(spi, &t); // Transmit!
-  int64_t end_time = esp_timer_get_time();
+  // int64_t end_time = esp_timer_get_time();
   // printf("time: %lld usec\n", end_time - start_time);
   const auto data = (unsigned short)(((unsigned short)(t.rx_data[0]) << 8) |
                                      ((unsigned short)(t.rx_data[1])));
+
+  // printf("%d, %d, %d, %d\n", t.rx_data[0], t.rx_data[1], t.rx_data[2],
+  // t.rx_data[3]);
 
   // assert(ret == ESP_OK); // Should have had no issues.
 

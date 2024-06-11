@@ -1,8 +1,8 @@
 #ifndef SENSING_TASK_HPP
 #define SENSING_TASK_HPP
 
-#include "as5147p.hpp"
 #include "ads7038.hpp"
+#include "as5147p.hpp"
 #include "defines.hpp"
 #include "driver/pcnt.h"
 #include "driver/timer.h"
@@ -59,6 +59,10 @@ public:
   std::vector<float> coef_list_l;
 
 private:
+  volatile bool r90 = true;
+  volatile bool l90 = true;
+  volatile bool r45 = true;
+  volatile bool l45 = true;
   volatile int cnt_a = 0;
   esp_timer_handle_t timer_200us;
   esp_timer_handle_t timer_250us;
@@ -72,11 +76,12 @@ private:
   std::shared_ptr<spi_device_interface_config_t> as5145p_left_spi_devcfg;
   std::shared_ptr<spi_device_interface_config_t> as5145p_right_spi_devcfg;
   std::shared_ptr<spi_device_interface_config_t> ads7038_spi_devcfg;
- 
 
   static void timer_10us_callback(void *arg);
   static void timer_200us_callback(void *arg);
   static void timer_250us_callback(void *arg);
+
+  void change_led_mode();
 
   void calc_vel(float gyro_dt, float enc_l_dt, float enc_r_dt);
   void set_gpio_state(gpio_num_t gpio_num, int state) {

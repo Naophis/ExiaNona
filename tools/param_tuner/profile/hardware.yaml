@@ -69,7 +69,7 @@ fail_wall_off_cnt: 500
 cell: 90
 cell2: 90
 
-led_light_delay_cnt: 1250
+led_light_delay_cnt: 400
 led_light_delay_cnt2: 1250
 
 axel_degenerate_x: [0, 1, 2, 4, 6, 8, 10]

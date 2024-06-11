@@ -104,6 +104,7 @@ public:
   void init(spi_host_device_t spi, std::shared_ptr<spi_bus_config_t> &bus,
             std::shared_ptr<spi_device_interface_config_t> &devcfg);
   uint8_t write1byte(const uint8_t address, const uint8_t data);
+  uint8_t write1byte_2(const uint8_t address, const uint8_t data);
   uint8_t write2byte(const uint16_t data);
   void write3byte(const uint8_t data1, const uint8_t data2,
                   const uint8_t data3);
@@ -125,6 +126,8 @@ public:
   void set_gpio_state(gpio_num_t gpio_num, int state);
 
 private:
+  uint8_t ads7038_data[6];
+  //  = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   spi_device_handle_t spi;
   spi_transaction_t itr_t;
   spi_transaction_t *r_trans;

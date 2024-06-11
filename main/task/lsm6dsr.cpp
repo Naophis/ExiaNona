@@ -241,10 +241,35 @@ void LSM6DSR::req_read2byte_itr(const uint8_t address) {
   itr_t.tx_data[2] = 0;
   spi_device_queue_trans(spi, &itr_t, 1.0 / portTICK_RATE_MS); // Transmit!
 }
-int16_t LSM6DSR::read_2byte_itr() {
-  spi_device_get_trans_result(spi, &r_trans, 1.0 / portTICK_RATE_MS);
-  return (signed short)((((unsigned short)(r_trans->rx_data[2] & 0xff)) << 8) |
-                        ((unsigned short)(r_trans->rx_data[1] & 0xff)));
+int16_t LSM6DSR::read_2byte_itr() { return 0; }
+int16_t LSM6DSR::read_2byte(const uint8_t address) {
+  esp_err_t ret;
+  static spi_transaction_t t;
+  static bool is_initialized = false;
+
+  if (!is_initialized) {
+    memset(&t, 0, sizeof(t)); // Zero out the transaction once
+    t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
+    t.length = 24; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
+    is_initialized = true;
+  }
+
+  t.tx_data[0] = (address | READ_FLAG);
+  t.tx_data[1] = 0;
+  t.tx_data[2] = 0;
+
+  int64_t start_time = esp_timer_get_time();
+  spi_device_polling_start(spi, &t, portMAX_DELAY);
+  int64_t end_time = esp_timer_get_time();
+  spi_device_polling_end(spi, portMAX_DELAY);
+  int64_t end_time2 = esp_timer_get_time();
+  // auto data = (signed short)((((unsigned short)(t.rx_data[2] & 0xff)) << 8) |
+  //                            ((unsigned short)(t.rx_data[1] & 0xff)));
+  // printf("Time: %lld, %lld, %d\n", end_time - start_time, end_time2 - end_time,
+  //        data);
+
+  return (signed short)((((unsigned short)(t.rx_data[2] & 0xff)) << 8) |
+                        ((unsigned short)(t.rx_data[1] & 0xff)));
 }
 signed short LSM6DSR::read_2byte_itr2(std::vector<int> &list) {
   spi_device_get_trans_result(spi, &r_trans, 1 / portTICK_RATE_MS);
