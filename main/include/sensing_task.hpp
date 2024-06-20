@@ -32,6 +32,8 @@ public:
 
   QueueHandle_t *qh;
   void set_queue_handler(QueueHandle_t &_qh) { qh = &_qh; }
+  TaskHandle_t *th;
+  void set_task_handler(TaskHandle_t &_th) { th = &_th; }
   std::shared_ptr<MainTask> mt;
   void set_main_task(std::shared_ptr<MainTask> &_mt) {
     mt = _mt; //

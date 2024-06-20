@@ -139,6 +139,47 @@ SensingTask st;
 std::shared_ptr<sensing_result_entity_t> get_sensing_entity() {
   return sensing_entity;
 }
+TaskHandle_t xTaskHandler;
+
+TaskHandle_t pt1;
+TaskHandle_t pt2;
+TickType_t us_to_ticks(uint32_t us) {
+  return (us + portTICK_PERIOD_MS * 1000 - 1) / (portTICK_PERIOD_MS * 1000);
+}
+void periodic_task(void *pvParameters) {
+  uint32_t ulNotificationValue;
+  uint32_t start, end;
+  while (1) {
+    start = esp_timer_get_time();
+    BaseType_t xResult =
+        xTaskNotifyWait(0x00,       // クリアビットマスク
+                        0xffffffff, // 受信ビットマスク
+                        &ulNotificationValue, // 受信した通知の値を格納する変数
+                        0 // タイムアウトを10msecに設定
+        );
+
+    end = esp_timer_get_time();
+    if (xResult == pdPASS) {
+      // 通知を受け取った場合はその内容をprintfで出力
+      printf("Received notification value: %ld (time: %ld)\n",
+             ulNotificationValue, end - start);
+    }
+
+    // 次の周期まで待つ (10msec)
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+}
+
+// 通知を送るタスク
+void notify_task(void *pvParameters) {
+  uint32_t value_to_send = 0;
+  while (1) {
+    value_to_send++;
+    xTaskNotify(pt2, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
+    // 次の送信まで待つ (1秒)
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
 
 extern "C" void app_main() {
   // Adachi adachi;
@@ -171,12 +212,19 @@ extern "C" void app_main() {
   // sn->set_planning_task(pt);
   // sn->create_task(0);
 
+  // xTaskCreatePinnedToCore(periodic_task, "pt", 2048, NULL, 1, &pt2, 1);
+  // xTaskCreatePinnedToCore(notify_task, "nt", 2048, NULL, 1, NULL, 0);
+
+  // while (1) {
+  //   vTaskDelay(5000.0 / portTICK_RATE_MS);
+  // }
   st.set_sensing_entity(sensing_entity);
   st.set_tgt_val(tgt_val);
   st.set_main_task(mt);
   st.set_input_param_entity(param);
   st.set_planning_task(pt);
   st.set_queue_handler(xQueue);
+  st.set_task_handler(xTaskHandler);
   st.create_task(0);
 
   // sn->init();
@@ -186,6 +234,8 @@ extern "C" void app_main() {
   pt->set_tgt_val(tgt_val);
   pt->set_error_entity(error_entity);
   pt->set_queue_handler(xQueue);
+  pt->set_task_handler(xTaskHandler);
+  // pt->set_task_handler((TaskHandle_t) NULL);
   // pt->set_sensing(sn);
   pt->create_task(0);
 
@@ -202,6 +252,8 @@ extern "C" void app_main() {
   mt->set_planning_task(pt);
   mt->set_logging_task(lt);
   mt->set_queue_handler(xQueue);
+  mt->set_task_handler(xTaskHandler);
+  // mt->set_task_handler((TaskHandle_t) NULL);
   mt->create_task(1);
 
   esp_task_wdt_reset();

@@ -27,7 +27,7 @@ void SensingTask::timer_250us_callback_main() {}
 
 void SensingTask::create_task(const BaseType_t xCoreID) {
   xTaskCreatePinnedToCore(task_entry_point, "sensing_task", 8192 * 2, this, 2,
-                          &handle, xCoreID);
+                          th, xCoreID);
   // const esp_timer_create_args_t timer_200us_args = {
   //     .callback = &SensingTask::timer_200us_callback,
   //     .arg = this,
@@ -453,11 +453,7 @@ void SensingTask::task() {
     // cout << enc_r << ", " << enc_l << endl;
     end = esp_timer_get_time();
     se->calc_time2 = (int16_t)(end - start);
-
-    // printf("time: %d, %d, %lld, %lld, %lld, %lld, %lld, %lld\n",
-    // se->calc_time,
-    //        se->calc_time2, end - start2, end2 - start2, end3 - start3,
-    //        end5 - start5, end5 - start5, end5 - start5);
+    // printf("time: %lld\n", end - start);
     vTaskDelay(1.0 / portTICK_PERIOD_MS);
   }
 }

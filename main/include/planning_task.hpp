@@ -80,6 +80,9 @@ public:
   motion_tgt_val_t *receive_req;
 
   void set_queue_handler(QueueHandle_t &_qh) { qh = &_qh; }
+  TaskHandle_t *th;
+  void set_task_handler(TaskHandle_t &_th) { th = &_th; }
+
   std::vector<float> log_table;
 
   t_ego mpc_next_ego;
@@ -237,6 +240,10 @@ private:
   // PID_Controller_2dof vel_pid_2dof;
   // PID_Controller_2dof gyro_pid_2dof;
   unsigned char w_reset = 0;
+
+  TickType_t us_to_ticks(uint32_t us) {
+    return (us + portTICK_PERIOD_MS * 1000 - 1) / (portTICK_PERIOD_MS * 1000);
+  }
 };
 
 #endif

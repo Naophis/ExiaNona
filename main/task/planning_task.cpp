@@ -13,8 +13,8 @@ PlanningTask::PlanningTask() {}
 
 PlanningTask::~PlanningTask() {}
 void PlanningTask::create_task(const BaseType_t xCoreID) {
-  xTaskCreatePinnedToCore(task_entry_point, "planning_task", 8192, this, 4,
-                          &handle, xCoreID);
+  xTaskCreatePinnedToCore(task_entry_point, "planning_task", 8192, this, 4, th,
+                          xCoreID);
   motor_qh_enable = xQueueCreate(4, sizeof(motor_req_t *));
   suction_qh_enable = xQueueCreate(4, sizeof(motor_req_t *));
 }
@@ -437,10 +437,23 @@ void PlanningTask::task() {
     mpc_step = 1;
     tgt_val->tgt_in.time_step2 = param_ro->sakiyomi_time;
 
-    auto res = xQueueReceive(*qh, &receive_req, 0);
-
-    if (res == pdTRUE) {
-      cp_request();
+    // auto res = xQueueReceive(*qh, &receive_req, 0);
+    uint32_t ulReceivedValue;
+    auto start_que_rec = esp_timer_get_time();
+    BaseType_t xResult = xTaskNotifyWait(0x00,             // clear bit mask
+                                         0xffffffff,       // recv bit mask
+                                         &ulReceivedValue, // recieve data
+                                         0 // us_to_ticks(1) // timeout
+    );
+    auto end_que_rec = esp_timer_get_time();
+    // printf("addr: %ld, %lld\n", ulReceivedValue, end_que_rec -
+    // start_que_rec);
+    if (xResult == pdTRUE) {
+      // printf("Received: %ld\n", ulReceivedValue);
+      if ((uint32_t)tgt_val.get() == ulReceivedValue) {
+        receive_req = (motion_tgt_val_t *)ulReceivedValue;
+        cp_request();
+      }
       first_req = true;
     }
 
@@ -510,7 +523,8 @@ void PlanningTask::task() {
     global_msec_timer++;
 
     end = esp_timer_get_time();
-    tgt_val->calc_time = (int16_t)(end - start2);
+    tgt_val->calc_time = (int16_t)(end - start);
+    // printf("calc_time: %d\n", tgt_val->calc_time);
     vTaskDelay(xDelay);
   }
 }
@@ -2403,6 +2417,7 @@ void PlanningTask::cp_request() {
   motion_req_timestamp = receive_req->nmr.timstamp;
 
   tgt_val->tgt_in.v_max = receive_req->nmr.v_max;
+  // printf("v_max: %f\n", tgt_val->tgt_in.v_max);
 
   if (receive_req->nmr.motion_type == MotionType::STRAIGHT ||
       receive_req->nmr.motion_type == MotionType::SLA_FRONT_STR) {

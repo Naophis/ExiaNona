@@ -14,7 +14,9 @@ MainTask::MainTask() {
 MainTask::~MainTask() {}
 
 void MainTask::create_task(const BaseType_t xCoreID) {
-  xTaskCreatePinnedToCore(task_entry_point, "main_task", 8192, this, 2, &handle,
+  // xTaskCreatePinnedToCore(task_entry_point, "main_task", 8192, this, 2, th,
+  //                         xCoreID);
+  xTaskCreatePinnedToCore(task_entry_point, "main_task", 8192, this, 2, NULL,
                           xCoreID);
 }
 void MainTask::task_entry_point(void *task_instance) {
@@ -90,8 +92,8 @@ void MainTask::dump1() {
   mp->reset_gyro_ref_with_check();
   tgt_val->nmr.motion_type = MotionType::SENSING_DUMP;
   tgt_val->nmr.timstamp++;
-  xQueueReset(*qh);
-  xQueueSendToFront(*qh, &tgt_val, 1);
+
+  xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
   while (1) {
 
     printf("%c[2J", ESC);   /* 画面消去 */
@@ -101,96 +103,96 @@ void MainTask::dump1() {
       printf("notification recieve\n");
     }
 
-    // printf("SW1 %d \n", gpio_get_level(SW1));
+    printf("SW1 %d \n", gpio_get_level(SW1));
 
-    // printf("gyro: %d\t(%0.3f)\n", sensing_result->gyro.raw,
-    //        tgt_val->gyro_zero_p_offset);
-    // printf("accel_x: %f\t(%f)\n", sensing_result->ego.accel_x_raw,
-    //        sensing_result->ego.accel_x_raw / 9806.65 *
-    //            param->accel_x_param.gain);
+    printf("gyro: %d\t(%0.3f)\n", sensing_result->gyro.raw,
+           tgt_val->gyro_zero_p_offset);
+    printf("accel_x: %f\t(%f)\n", sensing_result->ego.accel_x_raw,
+           sensing_result->ego.accel_x_raw / 9806.65 *
+               param->accel_x_param.gain);
     // printf("accel_y: %d\n", sensing_result->accel_y.raw);
     printf("battery: %0.3f (%d)\n", sensing_result->ego.battery_lp,
            sensing_result->battery.raw);
-    // printf("encoder: %ld, %ld\n", sensing_result->encoder.left,
-    //        sensing_result->encoder.right);
-    // printf(
-    //     "sensor: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
-    //     sensing_result->led_sen.left90.raw, sensing_result->led_sen.left45.raw,
-    //     sensing_result->led_sen.left45_2.raw, sensing_result->led_sen.front.raw,
-    //     sensing_result->led_sen.right45_2.raw,
-    //     sensing_result->led_sen.right45.raw,
-    //     sensing_result->led_sen.right90.raw);
-    // printf("sensor_before: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
-    //        sensing_result->led_sen_before.left90.raw,
-    //        sensing_result->led_sen_before.left45.raw,
-    //        sensing_result->led_sen_before.left45_2.raw,
-    //        sensing_result->led_sen_before.front.raw,
-    //        sensing_result->led_sen_before.right45_2.raw,
-    //        sensing_result->led_sen_before.right45.raw,
-    //        sensing_result->led_sen_before.right90.raw);
-    // printf("sensor_after: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
-    //        sensing_result->led_sen_after.left90.raw,
-    //        sensing_result->led_sen_after.left45.raw,
-    //        sensing_result->led_sen_after.left45_2.raw,
-    //        sensing_result->led_sen_after.front.raw,
-    //        sensing_result->led_sen_after.right45_2.raw,
-    //        sensing_result->led_sen_after.right45.raw,
-    //        sensing_result->led_sen_after.right90.raw);
-    // printf(
-    //     "sensor_dist(near): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-    //     sensing_result->ego.left90_dist,    //
-    //     sensing_result->ego.left45_dist,    //
-    //     sensing_result->ego.left45_2_dist,  //
-    //     sensing_result->ego.front_dist,     //
-    //     sensing_result->ego.right45_2_dist, //
-    //     sensing_result->ego.right45_dist,   //
-    //     sensing_result->ego.right90_dist);
-    // printf(
-    //     "sensor_dist(mid): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-    //     sensing_result->ego.left90_mid_dist, //
-    //     sensing_result->ego.left45_dist,     //
-    //     sensing_result->ego.left45_2_dist,   //
-    //     sensing_result->ego.front_mid_dist,  //
-    //     sensing_result->ego.right45_2_dist,  //
-    //     sensing_result->ego.right45_dist,    //
-    //     sensing_result->ego.right90_mid_dist);
-    // printf(
-    //     "sensor_dist(far): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",
-    //     sensing_result->ego.left90_far_dist, //
-    //     sensing_result->ego.left45_dist,     //
-    //     sensing_result->ego.left45_2_dist,   //
-    //     sensing_result->ego.front_far_dist,  //
-    //     sensing_result->ego.right45_2_dist,  //
-    //     sensing_result->ego.right45_dist,    //
-    //     sensing_result->ego.right90_far_dist);
+    printf("encoder: %ld, %ld\n", sensing_result->encoder.left,
+           sensing_result->encoder.right);
+    printf(
+        "sensor: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
+        sensing_result->led_sen.left90.raw, sensing_result->led_sen.left45.raw,
+        sensing_result->led_sen.left45_2.raw, sensing_result->led_sen.front.raw,
+        sensing_result->led_sen.right45_2.raw,
+        sensing_result->led_sen.right45.raw,
+        sensing_result->led_sen.right90.raw);
+    printf("sensor_before: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
+           sensing_result->led_sen_before.left90.raw,
+           sensing_result->led_sen_before.left45.raw,
+           sensing_result->led_sen_before.left45_2.raw,
+           sensing_result->led_sen_before.front.raw,
+           sensing_result->led_sen_before.right45_2.raw,
+           sensing_result->led_sen_before.right45.raw,
+           sensing_result->led_sen_before.right90.raw);
+    printf("sensor_after: %4d, %4d, %4d, %4d, %4d, %4d, %4d\n",
+           sensing_result->led_sen_after.left90.raw,
+           sensing_result->led_sen_after.left45.raw,
+           sensing_result->led_sen_after.left45_2.raw,
+           sensing_result->led_sen_after.front.raw,
+           sensing_result->led_sen_after.right45_2.raw,
+           sensing_result->led_sen_after.right45.raw,
+           sensing_result->led_sen_after.right90.raw);
+    printf(
+        "sensor_dist(near): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n ",
+        sensing_result->ego.left90_dist,    //
+        sensing_result->ego.left45_dist,    //
+        sensing_result->ego.left45_2_dist,  //
+        sensing_result->ego.front_dist,     //
+        sensing_result->ego.right45_2_dist, //
+        sensing_result->ego.right45_dist,   //
+        sensing_result->ego.right90_dist);
+    printf(
+        "sensor_dist(mid): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n ",
+        sensing_result->ego.left90_mid_dist, //
+        sensing_result->ego.left45_dist,     //
+        sensing_result->ego.left45_2_dist,   //
+        sensing_result->ego.front_mid_dist,  //
+        sensing_result->ego.right45_2_dist,  //
+        sensing_result->ego.right45_dist,    //
+        sensing_result->ego.right90_mid_dist);
+    printf(
+        "sensor_dist(far): %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n ",
+        sensing_result->ego.left90_far_dist, //
+        sensing_result->ego.left45_dist,     //
+        sensing_result->ego.left45_2_dist,   //
+        sensing_result->ego.front_far_dist,  //
+        sensing_result->ego.right45_2_dist,  //
+        sensing_result->ego.right45_dist,    //
+        sensing_result->ego.right90_far_dist);
 
-    // printf("sensor: %0.1f, %0.1f, %0.1f, %0.1f, %0.1f\n",
-    //        param->sen_ref_p.search_exist.left90,
-    //        param->sen_ref_p.search_exist.left45,
-    //        param->sen_ref_p.search_exist.front,
-    //        param->sen_ref_p.search_exist.right45,
-    //        param->sen_ref_p.search_exist.right90);
+    printf("sensor: %0.1f, %0.1f, %0.1f, %0.1f, %0.1f\n",
+           param->sen_ref_p.search_exist.left90,
+           param->sen_ref_p.search_exist.left45,
+           param->sen_ref_p.search_exist.front,
+           param->sen_ref_p.search_exist.right45,
+           param->sen_ref_p.search_exist.right90);
 
-    // printf("ego_v: %4.3f, %4.3f, %4.3f, %4.3f, (%4ld, %4ld)\n",
-    //        sensing_result->ego.v_l, sensing_result->ego.v_c,
-    //        sensing_result->ego.v_r, tgt_val->ego_in.dist,
-    //        sensing_result->encoder.left, sensing_result->encoder.right);
+    printf("ego_v: %4.3f, %4.3f, %4.3f, %4.3f, (%4ld, %4ld)\n",
+           sensing_result->ego.v_l, sensing_result->ego.v_c,
+           sensing_result->ego.v_r, tgt_val->ego_in.dist,
+           sensing_result->encoder.left, sensing_result->encoder.right);
 
-    // printf("calc_v: %4.3f, %3.3f\n", tgt_val->ego_in.v, tgt_val->ego_in.w);
+    printf("calc_v: %4.3f, %3.3f\n", tgt_val->ego_in.v, tgt_val->ego_in.w);
 
-    // printf("ego_w: %2.3f, %2.3f, %2.3f, %3.3f deg\n", sensing_result->ego.w_raw,
-    //        sensing_result->ego.w_lp, tgt_val->ego_in.ang,
-    //        tgt_val->ego_in.ang * 180 / m_PI);
+    printf("ego_w: %2.3f, %2.3f, %2.3f, %3.3f deg\n", sensing_result->ego.w_raw,
+           sensing_result->ego.w_lp, tgt_val->ego_in.ang,
+           tgt_val->ego_in.ang * 180 / m_PI);
 
-    // printf("gyro_raw[]: %4d, %4d, %4d, %4d, %4d\n",
-    //        sensing_result->gyro_list[0], sensing_result->gyro_list[1],
-    //        sensing_result->gyro_list[2], sensing_result->gyro_list[3],
-    //        sensing_result->gyro_list[4]);
+    printf("gyro_raw[]: %4d, %4d, %4d, %4d, %4d\n",
+           sensing_result->gyro_list[0], sensing_result->gyro_list[1],
+           sensing_result->gyro_list[2], sensing_result->gyro_list[3],
+           sensing_result->gyro_list[4]);
 
-    // const float tgt_gain =
-    //     1000.0 /
-    //     (sensing_result->accel_x.raw - tgt_val->accel_x_zero_p_offset) * 9.8;
-    // printf("accel: %3.3f, %6.6f\n", sensing_result->ego.accel_x_raw, tgt_gain);
+    const float tgt_gain =
+        1000.0 /
+        (sensing_result->accel_x.raw - tgt_val->accel_x_zero_p_offset) * 9.8;
+    printf("accel: %3.3f, %6.6f\n", sensing_result->ego.accel_x_raw, tgt_gain);
 
     // printf("duty: %3.3f, %3.3f\n", sensing_result->ego.duty.duty_l,
     //        sensing_result->ego.duty.duty_r);
@@ -218,8 +220,8 @@ void MainTask::dump2() {
 
   tgt_val->nmr.motion_type = MotionType::SENSING_DUMP;
   tgt_val->nmr.timstamp++;
-  xQueueReset(*qh);
-  xQueueSendToFront(*qh, &tgt_val, 1);
+
+  xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
   while (1) {
     printf("%d, %d, %d, %d, %d\n", sensing_result->led_sen.left90.raw,
            sensing_result->led_sen.left45.raw,
@@ -1638,8 +1640,9 @@ void MainTask::req_error_reset() {
   tgt_val->pl_req.error_ang_reset = 1;
   tgt_val->pl_req.error_dist_reset = 1;
   tgt_val->pl_req.time_stamp++;
-  xQueueReset(*qh);
-  xQueueSendToFront(*qh, &tgt_val, 1);
+  printf("req_error_reset\n");
+
+  xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
 }
 
 void MainTask::test_system_identification(bool para) {

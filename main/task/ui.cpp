@@ -75,8 +75,8 @@ void UserInterface::motion_check() {
   int c = 0;
   tgt_val->nmr.motion_type = MotionType::READY;
   tgt_val->nmr.timstamp++;
-  xQueueReset(*qh);
-  xQueueSendToFront(*qh, &tgt_val, 1);
+  
+  xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
   vTaskDelay(1.0 / portTICK_PERIOD_MS);
   while (1) {
     c++;
