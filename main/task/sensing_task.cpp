@@ -26,8 +26,11 @@ void SensingTask::timer_200us_callback_main() {}
 void SensingTask::timer_250us_callback_main() {}
 
 void SensingTask::create_task(const BaseType_t xCoreID) {
+  // xTaskCreatePinnedToCore(task_entry_point, "sensing_task", 8192 * 2, this,
+  // 2,
+  //                         th, xCoreID);
   xTaskCreatePinnedToCore(task_entry_point, "sensing_task", 8192 * 2, this, 2,
-                          th, xCoreID);
+                          NULL, xCoreID);
   // const esp_timer_create_args_t timer_200us_args = {
   //     .callback = &SensingTask::timer_200us_callback,
   //     .arg = this,

@@ -117,9 +117,9 @@ uint32_t AS5147P::read2byte(const uint8_t address1, const uint8_t address2,
   t.tx_data[1] = (address2);
   t.tx_data[2] = 0;
   t.tx_data[3] = 0;
-  int64_t start_time = esp_timer_get_time();
+  // int64_t start_time = esp_timer_get_time();
   ret = spi_device_polling_transmit(spi, &t); // Transmit!
-  int64_t end_time = esp_timer_get_time();
+  // int64_t end_time = esp_timer_get_time();
   // printf("time: %lld usec\n", end_time - start_time);
   return (int32_t)((uint16_t)(t.rx_data[0]) << 8) | (uint16_t)(t.rx_data[1]);
 

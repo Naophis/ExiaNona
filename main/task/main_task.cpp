@@ -1640,8 +1640,6 @@ void MainTask::req_error_reset() {
   tgt_val->pl_req.error_ang_reset = 1;
   tgt_val->pl_req.error_dist_reset = 1;
   tgt_val->pl_req.time_stamp++;
-  printf("req_error_reset\n");
-
   xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
 }
 

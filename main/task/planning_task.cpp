@@ -449,7 +449,7 @@ void PlanningTask::task() {
     // printf("addr: %ld, %lld\n", ulReceivedValue, end_que_rec -
     // start_que_rec);
     if (xResult == pdTRUE) {
-      // printf("Received: %ld\n", ulReceivedValue);
+      // printf("planning_task: %ld\n", ulReceivedValue);
       if ((uint32_t)tgt_val.get() == ulReceivedValue) {
         receive_req = (motion_tgt_val_t *)ulReceivedValue;
         cp_request();
