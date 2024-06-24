@@ -6,35 +6,9 @@ LSM6DSR::~LSM6DSR() {}
 void LSM6DSR::init(spi_host_device_t spi_dev,
                    std::shared_ptr<spi_bus_config_t> &bus,
                    std::shared_ptr<spi_device_interface_config_t> &devcfg) {
-  esp_err_t ret;
-  // Initialize the SPI bus
-  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
-  ESP_ERROR_CHECK(ret);
-  ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
-  ESP_ERROR_CHECK(ret);
+  spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
+  spi_bus_add_device(spi_dev, devcfg.get(), &spi);
 }
-// uint8_t LSM6DSR::write1byte(const uint8_t address, const uint8_t data) {
-//   esp_err_t ret;
-//   spi_transaction_t t;
-//   memset(&t, 0, sizeof(t)); // Zero out the transaction
-
-//   // printf("%2x, %2x\n", address, data);
-//   // printf("%2x, %2x\n", address, 0x0f & data);
-//   t.length = 24; // SPI_ADDRESS(8bit) + SPI_DATA(8bit)
-//   t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-//   // t.tx_data[0] = address;
-//   // t.tx_data[1] = (uint8_t)(0xff & data);
-//   t.tx_data[0] = (uint8_t)(0xff & data);
-//   t.tx_data[1] = address;
-//   t.tx_data[2] = 0;
-
-//   // uint16_t tx_data = (address) << 8 | (0xff & data);
-//   // tx_data = SPI_SWAP_DATA_TX(tx_data, 16);
-//   // t.tx_buffer = &(t.tx_data);
-//   ret = spi_device_polling_transmit(spi, &t); // Transmit!
-//   assert(ret == ESP_OK);                      // Should have had no issues.
-//   return 0;
-// }
 
 uint8_t LSM6DSR::write1byte(const uint8_t address, const uint8_t data) {
   esp_err_t ret;
@@ -47,11 +21,6 @@ uint8_t LSM6DSR::write1byte(const uint8_t address, const uint8_t data) {
   t.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
   t.tx_data[0] = address;
   t.tx_data[1] = (uint8_t)(0xff & data);
-  // t.tx_data[2] = 0;
-
-  // uint16_t tx_data = (address) << 8 | (0xff & data);
-  // tx_data = SPI_SWAP_DATA_TX(tx_data, 16);
-  // t.tx_buffer = &(t.tx_data);
   ret = spi_device_polling_transmit(spi, &t); // Transmit!
   assert(ret == ESP_OK);                      // Should have had no issues.
   return 0;
@@ -242,9 +211,9 @@ void LSM6DSR::req_read2byte_itr(const uint8_t address) {
   spi_device_queue_trans(spi, &itr_t, 1.0 / portTICK_RATE_MS); // Transmit!
 }
 int16_t LSM6DSR::read_2byte_itr() { return 0; }
-int16_t LSM6DSR::read_2byte(const uint8_t address) {
+int16_t IRAM_ATTR LSM6DSR::read_2byte(const uint8_t address) {
   esp_err_t ret;
-  static spi_transaction_t t;
+  DRAM_ATTR static spi_transaction_t t;
   static bool is_initialized = false;
 
   if (!is_initialized) {
@@ -265,7 +234,8 @@ int16_t LSM6DSR::read_2byte(const uint8_t address) {
   int64_t end_time2 = esp_timer_get_time();
   // auto data = (signed short)((((unsigned short)(t.rx_data[2] & 0xff)) << 8) |
   //                            ((unsigned short)(t.rx_data[1] & 0xff)));
-  // printf("Time: %lld, %lld, %d\n", end_time - start_time, end_time2 - end_time,
+  // printf("Time: %lld, %lld, %d\n", end_time - start_time, end_time2 -
+  // end_time,
   //        data);
 
   return (signed short)((((unsigned short)(t.rx_data[2] & 0xff)) << 8) |

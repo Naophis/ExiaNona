@@ -41,6 +41,8 @@ public:
 
   void exec_log();
 
+  void set_data();
+
   bool active_slalom_log = false;
   std::vector<std::shared_ptr<log_data_t2>> log_vec;
 

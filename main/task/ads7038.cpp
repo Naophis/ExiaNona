@@ -37,9 +37,9 @@ uint8_t ADS7038::write1byte(const uint8_t address, const uint8_t data) {
   assert(ret == ESP_OK);                      // Should have had no issues.
   return 0;
 }
-uint8_t ADS7038::write1byte_2(const uint8_t address, const uint8_t data) {
-  spi_transaction_t *rtrans;
-  static spi_transaction_t t;
+uint8_t IRAM_ATTR ADS7038::write1byte_2(const uint8_t address,
+                                        const uint8_t data) {
+  DRAM_ATTR static spi_transaction_t t;
   static bool is_initialized = false;
   if (!is_initialized) {
     memset(&t, 0, sizeof(t)); // Zero out the transaction once
@@ -99,9 +99,9 @@ uint8_t ADS7038::read1byte(const uint8_t address) {
   return data;
 }
 
-uint16_t ADS7038::read2byte(const uint16_t address) {
+uint16_t IRAM_ATTR ADS7038::read2byte(const uint16_t address) {
   esp_err_t ret;
-  static spi_transaction_t t;
+  DRAM_ATTR static spi_transaction_t t;
   static bool is_initialized = false;
 
   if (!is_initialized) {
@@ -164,7 +164,7 @@ void ADS7038::setup() {
   write1byte(0x10, 0x00); // manual sequance mode
   write1byte(0x04, 0x00);
 }
-void ADS7038::set_gpio_state(gpio_num_t gpio_num, int state) {
+void IRAM_ATTR ADS7038::set_gpio_state(gpio_num_t gpio_num, int state) {
   const int num = (int)gpio_num;
   if (num < 32) {
     if (state) {

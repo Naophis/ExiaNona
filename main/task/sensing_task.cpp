@@ -461,14 +461,14 @@ void SensingTask::task() {
   }
 }
 
-float SensingTask::calc_sensor(float data, float a, float b) {
+float IRAM_ATTR SensingTask::calc_sensor(float data, float a, float b) {
   auto res = a / std::log(data) - b;
   if (res < 5 || res > 180)
     return 180;
   return res;
 }
 
-void SensingTask::calc_vel(float gyro_dt, float enc_r_dt, float enc_l_dt) {
+void IRAM_ATTR SensingTask::calc_vel(float gyro_dt, float enc_r_dt, float enc_l_dt) {
   // const float dt = param->dt;
   const float tire = pt->suction_en ? param->tire2 : param->tire;
   const auto enc_delta_l =
@@ -535,7 +535,7 @@ void SensingTask::calc_vel(float gyro_dt, float enc_r_dt, float enc_l_dt) {
   tgt_val->global_pos.ang += sensing_result->ego.w_lp * gyro_dt;
 }
 
-void SensingTask::change_led_mode() {
+void IRAM_ATTR SensingTask::change_led_mode() {
   if (pt->search_mode && tgt_val->motion_type == MotionType::STRAIGHT) {
     // 加速中は正面は発光させない
     if (tgt_val->ego_in.state == 0) {

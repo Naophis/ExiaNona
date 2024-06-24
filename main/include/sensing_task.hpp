@@ -86,7 +86,7 @@ private:
   void change_led_mode();
 
   void calc_vel(float gyro_dt, float enc_l_dt, float enc_r_dt);
-  void set_gpio_state(gpio_num_t gpio_num, int state) {
+  void IRAM_ATTR set_gpio_state(gpio_num_t gpio_num, int state) {
     const int num = (int)gpio_num;
     if (num < 32) {
       if (state) {

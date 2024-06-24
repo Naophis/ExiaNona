@@ -2,17 +2,16 @@
 #define AS5147P_HPP
 
 #include "defines.hpp"
+#include "driver/pcnt.h"
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
+#include "driver/timer.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <bitset>
 #include <cstring>
 #include <string.h>
-#include "driver/pcnt.h"
-#include "driver/timer.h"
-#include "esp_timer.h"
-
 
 class AS5147P {
 public:

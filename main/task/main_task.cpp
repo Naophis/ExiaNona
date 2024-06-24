@@ -87,7 +87,7 @@ TurnType MainTask::cast_turn_type(std::string str) {
     return TurnType::Dia90;
   return TurnType::None;
 }
-void MainTask::dump1() {
+void IRAM_ATTR MainTask::dump1() {
   notify_handle = xTaskGetCurrentTaskHandle();
   mp->reset_gyro_ref_with_check();
   tgt_val->nmr.motion_type = MotionType::SENSING_DUMP;

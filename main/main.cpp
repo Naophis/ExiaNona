@@ -88,7 +88,7 @@ void init_gpio() {
 
   io_conf.pin_bit_mask |= 1ULL << L_CW_CCW1;
   io_conf.pin_bit_mask |= 1ULL << R_CW_CCW1;
-  
+
   io_conf.pin_bit_mask |= 1ULL << L_CW_CCW2;
   io_conf.pin_bit_mask |= 1ULL << R_CW_CCW2;
 
@@ -101,6 +101,8 @@ void init_gpio() {
   io_conf.pin_bit_mask |= 1ULL << SPI_R_ENC_SSL;
   io_conf.pin_bit_mask |= 1ULL << SPI_L_ENC_SSL;
   io_conf.pin_bit_mask |= 1ULL << SPI_L_ADC_SSL;
+  io_conf.pin_bit_mask |= 1ULL << SPI_R_MOSI;
+  io_conf.pin_bit_mask |= 1ULL << SPI_L_MOSI;
 
   // io_conf.pin_bit_mask |= 1ULL << LED1;
   // io_conf.pin_bit_mask |= 1ULL << LED2;
@@ -180,6 +182,22 @@ void notify_task(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
+void set_gpio_state(gpio_num_t gpio_num, int state) {
+  const int num = (int)gpio_num;
+  if (num < 32) {
+    if (state) {
+      GPIO.out_w1ts = BIT(num);
+    } else {
+      GPIO.out_w1tc = BIT(num);
+    }
+  } else {
+    if (state) {
+      GPIO.out1_w1ts.val = BIT(num - 32);
+    } else {
+      GPIO.out1_w1tc.val = BIT(num - 32);
+    }
+  }
+}
 
 extern "C" void app_main() {
   // Adachi adachi;
@@ -214,9 +232,14 @@ extern "C" void app_main() {
 
   // xTaskCreatePinnedToCore(periodic_task, "pt", 2048, NULL, 1, &pt2, 1);
   // xTaskCreatePinnedToCore(notify_task, "nt", 2048, NULL, 1, NULL, 0);
-
   // while (1) {
-  //   vTaskDelay(5000.0 / portTICK_RATE_MS);
+  //   auto start = esp_timer_get_time();
+  //   write(0x7fff);
+  //   const auto data = read(16, 0);
+  //   auto end = esp_timer_get_time();
+  //   printf("data: %ld, %lld\n", data, end - start);
+
+  //   vTaskDelay(250.0 / portTICK_RATE_MS);
   // }
   st.set_sensing_entity(sensing_entity);
   st.set_tgt_val(tgt_val);
