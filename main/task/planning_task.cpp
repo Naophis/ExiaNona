@@ -438,27 +438,8 @@ void PlanningTask::task() {
     mpc_step = 1;
     tgt_val->tgt_in.time_step2 = param_ro->sakiyomi_time;
 
-    // auto res = xQueueReceive(*qh, &receive_req, 0);
-    uint32_t ulReceivedValue;
-    auto start_que_rec = esp_timer_get_time();
-    BaseType_t xResult = xTaskNotifyWait(0x00,             // clear bit mask
-                                         0xffffffff,       // recv bit mask
-                                         &ulReceivedValue, // recieve data
-                                         0 // us_to_ticks(1) // timeout
-    );
-    auto end_que_rec = esp_timer_get_time();
-    // printf("addr: %ld, %lld\n", ulReceivedValue, end_que_rec -
-    // start_que_rec);
-    if (xResult == pdTRUE) {
-      // printf("planning_task: %ld\n", ulReceivedValue);
-      if ((uint32_t)tgt_val.get() == ulReceivedValue) {
-        receive_req = (motion_tgt_val_t *)ulReceivedValue;
-        cp_request();
-      }
-      first_req = true;
-    }
+    recv_notify();
 
-    // sn->task(search_mode, mode_select, res == pdTRUE);
     start2 = esp_timer_get_time();
 
     // 物理量ベース計算
@@ -2679,4 +2660,24 @@ void IRAM_ATTR PlanningTask::calc_sensor_dist_diff() {
   // {
   //   sensing_result->sen_dist_log.list.pop_front();
   // }
+}
+
+void IRAM_ATTR PlanningTask::recv_notify() {
+  uint32_t ulReceivedValue;
+  // auto start_que_rec = esp_timer_get_time();
+  BaseType_t xResult = xTaskNotifyWait(0x00,             // clear bit mask
+                                       0xffffffff,       // recv bit mask
+                                       &ulReceivedValue, // recieve data
+                                       0 // us_to_ticks(1) // timeout
+  );
+  // auto end_que_rec = esp_timer_get_time();
+  // printf("addr: %ld, %lld\n", ulReceivedValue, end_que_rec - start_que_rec);
+  if (xResult == pdTRUE) {
+    // printf("planning_task: %ld\n", ulReceivedValue);
+    if ((uint32_t)tgt_val.get() == ulReceivedValue) {
+      receive_req = (motion_tgt_val_t *)ulReceivedValue;
+      cp_request();
+    }
+    first_req = true;
+  }
 }

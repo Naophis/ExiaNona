@@ -14,7 +14,7 @@ void ADS7038::init(spi_host_device_t spi_dev,
                    std::shared_ptr<spi_bus_config_t> &bus,
                    std::shared_ptr<spi_device_interface_config_t> &devcfg) {
   esp_err_t ret;
-  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_CH_AUTO);
+  ret = spi_bus_initialize(spi_dev, bus.get(), SPI_DMA_DISABLED);
   ESP_ERROR_CHECK(ret);
   ret = spi_bus_add_device(spi_dev, devcfg.get(), &spi);
   ESP_ERROR_CHECK(ret);

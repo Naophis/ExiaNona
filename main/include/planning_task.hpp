@@ -156,6 +156,8 @@ private:
 
   void calc_filter();
 
+  void recv_notify();
+
   duty_t tgt_duty;
   int fail_check_ang = 0;
   int keep_wall_off_cnt = 0;
