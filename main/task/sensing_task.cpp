@@ -340,8 +340,8 @@ void SensingTask::task() {
         sensing_result->led_sen_after.right45.raw = adc_if.read2byte(0x10);
         set_gpio_state(LED_EN, false);
       }
-      adc_if.write1byte_2(0x11, 0x04);
       if (!skip_sensing) {
+        adc_if.write1byte_2(0x11, 0x04);
         sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
         sensing_result->led_sen_before.right45_2.raw = adc_if.read2byte(0x10);
       }
@@ -414,8 +414,12 @@ void SensingTask::task() {
           se->led_sen_after.right90.raw - se->led_sen_before.right90.raw, 0);
       se->led_sen.right45.raw = std::max(
           se->led_sen_after.right45.raw - se->led_sen_before.right45.raw, 0);
+      se->led_sen.right45_2.raw = std::max(
+          se->led_sen_after.right45_2.raw - se->led_sen_before.right45_2.raw, 0);
       se->led_sen.left45.raw = std::max(
           se->led_sen_after.left45.raw - se->led_sen_before.left45.raw, 0);
+      se->led_sen.left45_2.raw = std::max(
+          se->led_sen_after.left45_2.raw - se->led_sen_before.left45_2.raw, 0);
       se->led_sen.left90.raw = std::max(
           se->led_sen_after.left90.raw - se->led_sen_before.left90.raw, 0);
       se->led_sen.front.raw =
@@ -423,6 +427,8 @@ void SensingTask::task() {
     } else {
       se->led_sen.right90.raw = 0;
       se->led_sen.right45.raw = 0;
+      se->led_sen.right45_2.raw = 0;
+      se->led_sen.left45_2.raw = 0;
       se->led_sen.left45.raw = 0;
       se->led_sen.left90.raw = 0;
       se->led_sen.front.raw = 0;

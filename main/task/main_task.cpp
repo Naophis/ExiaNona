@@ -217,17 +217,21 @@ void IRAM_ATTR MainTask::dump1() {
 }
 
 void MainTask::dump2() {
-
+  notify_handle = xTaskGetCurrentTaskHandle();
+  mp->reset_gyro_ref_with_check();
   tgt_val->nmr.motion_type = MotionType::SENSING_DUMP;
   tgt_val->nmr.timstamp++;
 
   xTaskNotify(*th, (uint32_t)tgt_val.get(), eSetValueWithOverwrite);
+
   while (1) {
-    printf("%d, %d, %d, %d, %d\n", sensing_result->led_sen.left90.raw,
+    printf("%d, %d, %d, %d, %d, %d, %d\n", sensing_result->led_sen.left90.raw,
            sensing_result->led_sen.left45.raw,
            sensing_result->led_sen.front.raw,
            sensing_result->led_sen.right45.raw,
-           sensing_result->led_sen.right90.raw);
+           sensing_result->led_sen.right90.raw,
+           sensing_result->led_sen.left45_2.raw,
+           sensing_result->led_sen.right45_2.raw);
 
     if (ui->button_state()) {
       tgt_val->ego_in.ang = tgt_val->ego_in.dist = 0;
